@@ -4,23 +4,21 @@ from matplotlib.animation import FuncAnimation
 
 
 if __name__ == '__main__':
-    # # create a simulator instance
-    # # y = Ax + B
-    # sim = LinearSlope()
-
-    # # set initial conditions and parameters
-    # # x(0), x'(0)
-    # initial_conditions = (0, 0)
-    # # A, B, g
-    # params = (-0.5, 100, 9.81)
-    
-    # # simulate
-    # t, x, y = sim.simulate(initial_conditions, params)
-
-    sim = QuadraticSlope()
+    # create a simulator instance
+    sim = LinearSlope()
+    # set initial conditions
+    # (x(0), x'(0))
     initial_conditions = (0,0)
-    params = (0.1, -2, 10 , 9.81)
-    t, x, y = sim.simulate(initial_conditions, params)
+    # set slope parameters
+    # for descriptions see slope object and simulate method docstrings
+    slope_params = (-0.5, 0)
+    # simulate movement using given parameters
+    t, x, y = sim.simulate(initial_conditions, slope_params, 9.81)
+
+    # sim = QuadraticSlope()
+    # initial_conditions = (0,0)
+    # slope_params = (0.1, -2, 10)
+    # t, x, y = sim.simulate(initial_conditions, slope_params, 9.81)
 
     # plot results
     # that's rather crude
