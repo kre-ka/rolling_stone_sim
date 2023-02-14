@@ -1,6 +1,8 @@
 import sympy as sym
 import numpy as np
 from scipy.integrate import solve_ivp
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 
 
 # base class, don't use it on its own
@@ -93,3 +95,74 @@ class QuadraticSlope(_Slope):
     def simulate(self, initial_conditions, slope_params, g):
         '''slope_params = (A, B, C)'''
         return super().simulate(initial_conditions, slope_params, g)
+
+def plot_sim_results(t, x, y):
+    # make axis limits a little bigger than necessary
+    def expand_limits(lim, amount):
+        additional_range = (lim[1] - lim[0]) * amount
+        return (lim[0] - additional_range, lim[1] + additional_range)
+    
+    # fix axis limits so scale is the same on both axes
+    def equalize_axis_scales(x_lim, y_lim):
+        x_range = x_lim[1] - x_lim[0]
+        y_range = y_lim[1] - y_lim[0]
+        if x_range > y_range:
+            y_middle = (y_lim[0] + y_lim[1]) / 2
+            y_lim = (y_middle - x_range/2, y_middle + x_range/2)
+        elif y_range > x_range:
+            x_middle = (x_lim[0] + x_lim[1]) / 2
+            x_lim = (x_middle - y_range/2, x_middle + y_range/2)
+        return x_lim, y_lim
+    
+    t_plt = []
+    x_plt = []
+    y_plt = []
+    fig, axs = plt.subplots(1,3)
+
+    # make static plot limits
+    t_lim = expand_limits((t.min(), t.max()), 0.05)
+    x_lim = expand_limits((x.min(), x.max()), 0.05)
+    y_lim = expand_limits((y.min(), y.max()), 0.05)
+
+    # x(t)
+    axs[0].set_xlabel('t')
+    axs[0].set_ylabel('x')
+    axs[0].set_xlim(t_lim)
+    axs[0].set_ylim(x_lim)
+    line_xt, = axs[0].plot(t_plt, x_plt)
+
+    # y(t)
+    axs[1].set_xlabel('t')
+    axs[1].set_ylabel('y')
+    axs[1].set_xlim(t_lim)
+    axs[1].set_ylim(y_lim)
+    line_yt, = axs[1].plot(t_plt, y_plt)
+
+    # y(x)
+    x_lim, y_lim = equalize_axis_scales(x_lim, y_lim)
+    axs[2].set_xlabel('x')
+    axs[2].set_ylabel('y')
+    axs[2].set_xlim(x_lim)
+    axs[2].set_ylim(y_lim)
+    line_yx, = axs[2].plot(x, y)
+    point_yx, = axs[2].plot(x_plt, y_plt, 'o')
+
+    def animate(i):
+        t_plt.append(t[i])
+        x_plt.append(x[i])
+        y_plt.append(y[i])
+
+        line_xt.set_xdata(t_plt)
+        line_xt.set_ydata(x_plt)
+
+        line_yt.set_xdata(t_plt)
+        line_yt.set_ydata(y_plt)
+
+        point_yx.set_xdata(x[i])
+        point_yx.set_ydata(y[i])
+
+        fig.canvas.draw()
+        fig.canvas.flush_events()
+
+    ani = FuncAnimation(plt.gcf(), animate, frames=len(x), interval=100, repeat=False)
+    plt.show()
