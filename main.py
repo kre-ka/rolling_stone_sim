@@ -1,19 +1,24 @@
-from sim import LinearSlope
+from sim import LinearSlope, QuadraticSlope
 import matplotlib.pyplot as plt
 
 
 if __name__ == '__main__':
-    # create a simulator instance
-    # y = Ax + B
-    sim = LinearSlope()
+    # # create a simulator instance
+    # # y = Ax + B
+    # sim = LinearSlope()
 
-    # set initial conditions and parameters
-    # x(0), x'(0)
-    initial_conditions = (0, 0)
-    # A, B, g
-    params = (-0.5, 100, 9.81)
+    # # set initial conditions and parameters
+    # # x(0), x'(0)
+    # initial_conditions = (0, 0)
+    # # A, B, g
+    # params = (-0.5, 100, 9.81)
     
-    # simulate
+    # # simulate
+    # t, x, y = sim.simulate(initial_conditions, params)
+
+    sim = QuadraticSlope()
+    initial_conditions = (0,0)
+    params = (0.1, -2, 10 , 9.81)
     t, x, y = sim.simulate(initial_conditions, params)
 
     # plot results
