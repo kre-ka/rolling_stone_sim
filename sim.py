@@ -45,16 +45,22 @@ class _Slope:
         # left side of the equation is derivative of state i.g.(x',v')
         self._dyn_eq_f = sym.lambdify([self._t,(self._x,v),self._slope_params,self._g], dyn_eq)
     
-    # initial_conditions = (x(0), x'(0))
-    # slope_params = (A, B, C)
-    # g - gravity constant
-    # returns (t, x, y) vectors
-    def simulate(self, initial_conditions, slope_params, g):
-        # start and stop times
-        t_0 = 0
-        t_f = t_0 + 10
+    def simulate(self, initial_conditions, slope_params, g, t, t_res):
+        '''
+        initial_conditions = (x(0), x'(0)) ([m], [m/s])
+
+        slope_params = (A, B, C)
+
+        g - gravity constant [m/s**2]
+
+        t - simulation time [s]
+
+        t_res - time resolution [Hz]
+
+        returns (t, x, y) vectors
+        '''
         # evaluation times vector
-        t = np.linspace(t_0, t_f, 100)
+        t = np.linspace(0, t, int(t*t_res))
         # solve dynamics equation numerically with given parameters
         sol = solve_ivp(self._dyn_eq_f, (0, 10), initial_conditions, args=(slope_params, g), t_eval=t)
         print(sol)
@@ -75,9 +81,9 @@ class LinearSlope(_Slope):
 
         self.calc_equations()
     
-    def simulate(self, initial_conditions, slope_params, g):
+    def simulate(self, initial_conditions, slope_params, g, t, t_res):
         '''slope_params = (A, B)'''
-        return super().simulate(initial_conditions, slope_params, g)
+        return super().simulate(initial_conditions, slope_params, g, t, t_res)
 
 class QuadraticSlope(_Slope):
     '''Utilizes function y = Ax**2 + Bx + C'''
@@ -92,10 +98,11 @@ class QuadraticSlope(_Slope):
 
         self.calc_equations()
 
-    def simulate(self, initial_conditions, slope_params, g):
+    def simulate(self, initial_conditions, slope_params, g, t, t_res):
         '''slope_params = (A, B, C)'''
-        return super().simulate(initial_conditions, slope_params, g)
+        return super().simulate(initial_conditions, slope_params, g, t, t_res)
 
+# may not work in real time if time resolution is too large
 def plot_sim_results(t, x, y):
     # make axis limits a little bigger than necessary
     def expand_limits(lim, amount):
@@ -164,5 +171,5 @@ def plot_sim_results(t, x, y):
         fig.canvas.draw()
         fig.canvas.flush_events()
 
-    ani = FuncAnimation(plt.gcf(), animate, frames=len(x), interval=100, repeat=False)
+    ani = FuncAnimation(plt.gcf(), animate, frames=len(x), interval=int((t[1]-t[0])*1000), repeat=False)
     plt.show()

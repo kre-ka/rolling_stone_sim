@@ -11,7 +11,7 @@ if __name__ == '__main__':
     # for descriptions see slope object and simulate method docstrings
     slope_params = (-0.5, 0)
     # simulate movement using given parameters
-    t, x, y = sim.simulate(initial_conditions, slope_params, 9.81)
+    t, x, y = sim.simulate(initial_conditions, slope_params, 9.81, 10, 10)
 
     # sim = QuadraticSlope()
     # initial_conditions = (0,0)
