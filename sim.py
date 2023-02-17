@@ -19,7 +19,7 @@ class _Slope:
 
         Call this at the end of inherited constructor'''
         # make a numerical version of the y(x) equation
-        self._y_f = sym.lambdify([self._x,self._slope_params], self._y)
+        self._y_f = sym.lambdify([self._x,self._slope_coef], self._y)
 
         # lagrange dynamics
         # kinetic energy
@@ -43,30 +43,40 @@ class _Slope:
         # make the numerical version of the equation
         # t must go first, then state vector (x,v), then parameters
         # left side of the equation is derivative of state i.g.(x',v')
-        self._dyn_eq_f = sym.lambdify([self._t,(self._x,v),self._slope_params,self._g], dyn_eq)
+        self._dyn_eq_f = sym.lambdify([self._t,(self._x,v),self._slope_coef,self._g], dyn_eq)
     
-    def simulate(self, initial_conditions, slope_params, g, t, t_res):
+    def simulate(self, slope_coef, xf, g=9.81, t_max=30, t_res=10):
         '''
-        initial_conditions = (x(0), x'(0)) ([m], [m/s])
+        slope_coef - coefficients of a slope polynomial, can vary between child classes
 
-        slope_params = (A, B, C)
+        xf - finish x [m] - simulation terminates on reaching x=xf
 
-        g - gravity constant [m/s**2]
+        g - gravity constant, default: 9.81 [m/s**2]
 
-        t - simulation time [s]
+        t_max - max simulation time, default: 30 [s]
 
-        t_res - time resolution [Hz]
+        t_res - time resolution, default: 10 [Hz]
 
-        returns (t, x, y) vectors
+        returns (t, x, y, tf) - movement vectors and finish time
         '''
+        # stop on reaching x=xf
+        def event_finish(t, x, slope_coef, g):
+            return x[0] - xf
+        event_finish.terminal = True
         # evaluation times vector
-        t = np.linspace(0, t, int(t*t_res))
+        t = np.linspace(0, t_max, int(t_max*t_res))
+        initial_conditions = (0, 0)  # (x(0) [m], x'(0) [m/s])
         # solve dynamics equation numerically with given parameters
-        sol = solve_ivp(self._dyn_eq_f, (0, 10), initial_conditions, args=(slope_params, g), t_eval=t)
-        print(sol)
+        sol = solve_ivp(self._dyn_eq_f, (0, t_max), initial_conditions, args=(slope_coef, g), t_eval=t, events=[event_finish])
+        # print(sol)
+        t = sol.t
         x = sol.y[0]
-        y = self._y_f(x, slope_params)
-        return t, x, y
+        y = self._y_f(x, slope_coef)
+        tf = sol.t_events[0][0]
+        return t, x, y, tf
+    
+    def _event_finish(t, y):
+        return y
 
 class LinearSlope(_Slope):
     '''Utilizes function y = Ax + B'''
@@ -75,15 +85,30 @@ class LinearSlope(_Slope):
         super().__init__()
 
         # define slope parameters
-        self._slope_params = sym.symbols('A B', real=True)
+        self._slope_coef = sym.symbols('A B', real=True)
         # define y(x)
-        self._y = self._slope_params[0]*self._x + self._slope_params[1]
+        self._y = self._slope_coef[0]*self._x + self._slope_coef[1]
 
         self.calc_equations()
     
-    def simulate(self, initial_conditions, slope_params, g, t, t_res):
-        '''slope_params = (A, B)'''
-        return super().simulate(initial_conditions, slope_params, g, t, t_res)
+    def simulate(self, slope_params, g=9.81, t_max=30, t_res=10):
+        '''
+
+        slope_params = (y0, xf) - start and finish point coordinates i.e. (0, y0), (xf, 0) [m]
+
+        g - gravity constant, default: 9.81 [m/s**2]
+
+        t_max - max simulation time, default: 30 [s]
+
+        t_res - time resolution, default: 10 [Hz]
+
+        returns (t, x, y) vectors
+        '''
+        y0, xf = slope_params
+        B = y0
+        A = -B / xf
+        return super().simulate((A, B), xf, g, t_max, t_res)
+
 
 class QuadraticSlope(_Slope):
     '''Utilizes function y = Ax**2 + Bx + C'''
@@ -92,15 +117,33 @@ class QuadraticSlope(_Slope):
         super().__init__()
 
         # define slope parameters
-        self._slope_params = sym.symbols('A B C', real=True)
+        self._slope_coef = sym.symbols('A B C', real=True)
         # define y(x)
-        self._y = self._slope_params[0]*self._x**2 + self._slope_params[1]*self._x + self._slope_params[2]
+        self._y = self._slope_coef[0]*self._x**2 + self._slope_coef[1]*self._x + self._slope_coef[2]
 
         self.calc_equations()
 
-    def simulate(self, initial_conditions, slope_params, g, t, t_res):
-        '''slope_params = (A, B, C)'''
-        return super().simulate(initial_conditions, slope_params, g, t, t_res)
+    def simulate(self, slope_params, g, t_max, t_res):
+        '''
+        initial_conditions = (x(0), x'(0)) ([m], [m/s])
+
+        slope_params = (y0, xf, steepness) - start and finish point coordinates i.e. (0, y0), (xf, 0) [m],
+                                             slope steepness parameter in range [0, 1)
+
+        g - gravity constant [m/s**2]
+
+        t_max - max simulation time [s]
+
+        t_res - time resolution [Hz]
+
+        returns (t, x, y) vectors
+        '''
+        y0, xf, s = slope_params
+        C = y0
+        B = - y0/(xf*(1-s))
+        A = - s*B/xf
+        return super().simulate((A, B, C), xf, g, t_max, t_res)
+
 
 # may not work in real time if time resolution is too large
 def plot_sim_results(t, x, y):
@@ -151,6 +194,7 @@ def plot_sim_results(t, x, y):
     axs[2].set_ylabel('y')
     axs[2].set_xlim(x_lim)
     axs[2].set_ylim(y_lim)
+    axs[2].axis("scaled")
     line_yx, = axs[2].plot(x, y)
     point_yx, = axs[2].plot(x_plt, y_plt, 'o')
 
