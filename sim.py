@@ -15,12 +15,14 @@ class _Slope:
     
     def calc_equations(self):
         '''
-        Calculates y(x) and dynamics equations to be used by numerical solver.
+        Calculates equations to be used by numerical solver.
 
-        Call this at the end of inherited constructor'''
-        # make a numerical version of the y(x) equation
-        self._y_f = sym.lambdify([self._x,self._slope_coef], self._y)
+        Call this at the end of inherited constructor
+        '''
+        self.calc_dyn_equations()
+        self.calc_y_equations()
 
+    def calc_dyn_equations(self):
         # lagrange dynamics
         # kinetic energy
         T = 0.5 * self._x.diff(self._t)**2 + self._y.diff(self._t)**2
@@ -45,6 +47,23 @@ class _Slope:
         # left side of the equation is derivative of state i.g.(x',v')
         self._dyn_eq_f = sym.lambdify([self._t,(self._x,v),self._slope_coef,self._g], dyn_eq)
     
+    def calc_y_equations(self):
+        '''
+        gives numerical version of y, y' and y'' equations
+        
+        self._y_f = (y, y', y'') = y((x, x', x''), slope_coef)
+        '''
+        # y = [y, y', y'']
+        y = [self._y, self._y.diff(self._t), self._y.diff(self._t, self._t)]
+        # x = [x, x', x'']
+        x = sym.symbols('x x\' x\'\'', cls=sym.Function)
+        x = [x_i(self._t) for x_i in x]
+        # substitute Derivative(x,t) with x' and x'' in symbolic expressions to allow lambdify
+        y = [y_i.subs(self._x.diff(self._t, self._t), x[2])\
+                .subs(self._x.diff(self._t), x[1])\
+                for y_i in y]
+        self._y_f = sym.lambdify([(x[0], x[1], x[2]), self._slope_coef], y)
+
     def simulate(self, slope_coef, xf, g=9.81, t_max=30, t_res=10):
         '''
         slope_coef - coefficients of a slope polynomial, can vary between child classes
@@ -70,13 +89,18 @@ class _Slope:
         sol = solve_ivp(self._dyn_eq_f, (0, t_max), initial_conditions, args=(slope_coef, g), t_eval=t, events=[event_finish])
         # print(sol)
         t = sol.t
-        x = sol.y[0]
+        # this gives x and x'
+        x = sol.y
+        # this gives x''
+        a = self._dyn_eq_f(t, x, slope_coef, g)[1]
+        # concatenate a into x for array (x, x', x'')
+        if not isinstance(a, np.ndarray):
+            a = np.full(len(x[0]), a)
+        x = np.row_stack((x,a))
         y = self._y_f(x, slope_coef)
         tf = sol.t_events[0][0]
         return t, x, y, tf
     
-    def _event_finish(t, y):
-        return y
 
 class LinearSlope(_Slope):
     '''Utilizes function y = Ax + B'''
@@ -164,53 +188,163 @@ def plot_sim_results(t, x, y):
             x_lim = (x_middle - y_range/2, x_middle + y_range/2)
         return x_lim, y_lim
     
+    x, x_dot, x_dot_dot = x
+    y, y_dot, y_dot_dot = y
+
+    v = (x_dot**2 + y_dot**2)**0.5
+    a = (x_dot_dot**2 + y_dot_dot**2)**0.5
+
     t_plt = []
     x_plt = []
+    x_dot_plt = []
+    x_dot_dot_plt = []
     y_plt = []
-    fig, axs = plt.subplots(1,3)
+    y_dot_plt = []
+    y_dot_dot_plt = []
+    v_plt = []
+    a_plt = []
+    fig, axs = plt.subplots(3,3)
 
     # make static plot limits
     t_lim = expand_limits((t.min(), t.max()), 0.05)
     x_lim = expand_limits((x.min(), x.max()), 0.05)
+    x_dot_lim = expand_limits((x_dot.min(), x_dot.max()), 0.05)
+    x_dot_dot_lim = expand_limits((x_dot_dot.min(), x_dot_dot.max()), 0.05)
     y_lim = expand_limits((y.min(), y.max()), 0.05)
+    y_dot_lim = expand_limits((y_dot.min(), y_dot.max()), 0.05)
+    y_dot_dot_lim = expand_limits((y_dot_dot.min(), y_dot_dot.max()), 0.05)
+    v_lim = expand_limits((v.min(), v.max()), 0.05)
+    a_lim = expand_limits((a.min(), a.max()), 0.05)
 
     # x(t)
-    axs[0].set_xlabel('t')
-    axs[0].set_ylabel('x')
-    axs[0].set_xlim(t_lim)
-    axs[0].set_ylim(x_lim)
-    line_xt, = axs[0].plot(t_plt, x_plt)
+    axs[0][0].set_xlabel('t')
+    axs[0][0].set_ylabel('x')
+    axs[0][0].set_xlim(t_lim)
+    axs[0][0].set_ylim(x_lim)
+    line_xt, = axs[0][0].plot(t_plt, x_plt)
+
+    # x'(t)
+    axs[1][0].set_xlabel('t')
+    axs[1][0].set_ylabel('x\'')
+    axs[1][0].set_xlim(t_lim)
+    axs[1][0].set_ylim(x_dot_lim)
+    line_x_dot_t, = axs[1][0].plot(t_plt, x_dot_plt)
+
+    # x''(t)
+    axs[2][0].set_xlabel('t')
+    axs[2][0].set_ylabel('x\'\'')
+    axs[2][0].set_xlim(t_lim)
+    axs[2][0].set_ylim(x_dot_dot_lim)
+    line_x_dot_dot_t, = axs[2][0].plot(t_plt, x_dot_dot_plt)
 
     # y(t)
-    axs[1].set_xlabel('t')
-    axs[1].set_ylabel('y')
-    axs[1].set_xlim(t_lim)
-    axs[1].set_ylim(y_lim)
-    line_yt, = axs[1].plot(t_plt, y_plt)
+    axs[0][1].set_xlabel('t')
+    axs[0][1].set_ylabel('y')
+    axs[0][1].set_xlim(t_lim)
+    axs[0][1].set_ylim(y_lim)
+    line_yt, = axs[0][1].plot(t_plt, y_plt)
+
+    # y'(t)
+    axs[1][1].set_xlabel('t')
+    axs[1][1].set_ylabel('y\'')
+    axs[1][1].set_xlim(t_lim)
+    axs[1][1].set_ylim(y_dot_lim)
+    line_y_dot_t, = axs[1][1].plot(t_plt, y_dot_plt)
+
+    # y''(t)
+    axs[2][1].set_xlabel('t')
+    axs[2][1].set_ylabel('y\'\'')
+    axs[2][1].set_xlim(t_lim)
+    axs[2][1].set_ylim(y_dot_dot_lim)
+    line_y_dot_dot_t, = axs[2][1].plot(t_plt, x_dot_dot_plt)
 
     # y(x)
     x_lim, y_lim = equalize_axis_scales(x_lim, y_lim)
-    axs[2].set_xlabel('x')
-    axs[2].set_ylabel('y')
-    axs[2].set_xlim(x_lim)
-    axs[2].set_ylim(y_lim)
-    axs[2].axis("scaled")
-    line_yx, = axs[2].plot(x, y)
-    point_yx, = axs[2].plot(x_plt, y_plt, 'o')
+    axs[0][2].set_xlabel('x')
+    axs[0][2].set_ylabel('y')
+    axs[0][2].set_xlim(x_lim)
+    axs[0][2].set_ylim(y_lim)
+    axs[0][2].axis("scaled")
+    line_yx, = axs[0][2].plot(x, y)
+    point_yx, = axs[0][2].plot(x_plt, y_plt, 'o')
+
+    # # v(x)
+    # x_lim, v_lim = equalize_axis_scales(x_lim, v_lim)
+    # axs[1][2].set_xlabel('x')
+    # axs[1][2].set_ylabel('v')
+    # axs[1][2].set_xlim(x_lim)
+    # axs[1][2].set_ylim(v_lim)
+    # axs[1][2].axis("scaled")
+    # line_vx, = axs[1][2].plot(x, v)
+    # point_vx, = axs[1][2].plot(x_plt, v_plt, 'o')
+
+    # # a(x)
+    # x_lim, a_lim = equalize_axis_scales(x_lim, a_lim)
+    # axs[2][2].set_xlabel('x')
+    # axs[2][2].set_ylabel('a')
+    # axs[2][2].set_xlim(x_lim)
+    # axs[2][2].set_ylim(a_lim)
+    # axs[2][2].axis("scaled")
+    # line_ax, = axs[2][2].plot(x, a)
+    # point_ax, = axs[2][2].plot(x_plt, a_plt, 'o')
+
+    # v(t)
+    axs[1][2].set_xlabel('t')
+    axs[1][2].set_ylabel('v')
+    axs[1][2].set_xlim(t_lim)
+    axs[1][2].set_ylim(v_lim)
+    line_vx, = axs[1][2].plot(t_plt, v_plt)
+
+    # a(t)
+    axs[2][2].set_xlabel('t')
+    axs[2][2].set_ylabel('a')
+    axs[2][2].set_xlim(t_lim)
+    axs[2][2].set_ylim(a_lim)
+    line_ax, = axs[2][2].plot(t_plt, a_plt)
 
     def animate(i):
         t_plt.append(t[i])
         x_plt.append(x[i])
+        x_dot_plt.append(x_dot[i])
+        x_dot_dot_plt.append(x_dot_dot[i])
         y_plt.append(y[i])
+        y_dot_plt.append(y_dot[i])
+        y_dot_dot_plt.append(y_dot_dot[i])
+        v_plt.append(v[i])
+        a_plt.append(a[i])
 
         line_xt.set_xdata(t_plt)
         line_xt.set_ydata(x_plt)
 
+        line_x_dot_t.set_xdata(t_plt)
+        line_x_dot_t.set_ydata(x_dot_plt)
+
+        line_x_dot_dot_t.set_xdata(t_plt)
+        line_x_dot_dot_t.set_ydata(x_dot_dot_plt)
+
         line_yt.set_xdata(t_plt)
         line_yt.set_ydata(y_plt)
 
+        line_y_dot_t.set_xdata(t_plt)
+        line_y_dot_t.set_ydata(y_dot_plt)
+
+        line_y_dot_dot_t.set_xdata(t_plt)
+        line_y_dot_dot_t.set_ydata(y_dot_dot_plt)
+
         point_yx.set_xdata(x[i])
         point_yx.set_ydata(y[i])
+
+        # point_vx.set_xdata(x[i])
+        # point_vx.set_ydata(v[i])
+
+        # point_ax.set_xdata(x[i])
+        # point_ax.set_ydata(a[i])
+
+        line_vx.set_xdata(t_plt)
+        line_vx.set_ydata(v_plt)
+
+        line_ax.set_xdata(t_plt)
+        line_ax.set_ydata(a_plt)
 
         fig.canvas.draw()
         fig.canvas.flush_events()
