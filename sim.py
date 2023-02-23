@@ -174,6 +174,8 @@ def plot_sim_results(t, x, y):
     # make axis limits a little bigger than necessary
     def expand_limits(lim, amount):
         additional_range = (lim[1] - lim[0]) * amount
+        if additional_range == 0:
+            additional_range = 1 * amount
         return (lim[0] - additional_range, lim[1] + additional_range)
     
     # fix axis limits so scale is the same on both axes
