@@ -261,7 +261,10 @@ def plot_sim_results(t, x, y):
     y_dot_dot_plt = []
     v_plt = []
     a_plt = []
+
     fig, axs = plt.subplots(3,3)
+    fig.set_size_inches(10,10)
+    fig.canvas.header_visible = False
 
     # make static plot limits
     t_lim = expand_limits((t.min(), t.max()), 0.05)
@@ -404,8 +407,7 @@ def plot_sim_results(t, x, y):
         line_ax.set_xdata(t_plt)
         line_ax.set_ydata(a_plt)
 
-        fig.canvas.draw()
+        fig.canvas.draw_idle()
         fig.canvas.flush_events()
 
-    ani = FuncAnimation(plt.gcf(), animate, frames=len(x), interval=int((t[1]-t[0])*1000), repeat=False)
-    plt.show()
+    return FuncAnimation(plt.gcf(), animate, frames=len(x), interval=int((t[1]-t[0])*1000), repeat=False)
