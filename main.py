@@ -2,19 +2,15 @@ from sim import LinearSlope, QuadraticSlope, plot_sim_results
 
 
 if __name__ == '__main__':
-    # # create a simulator instance
-    # sim = LinearSlope()
-    # # set slope parameters
-    # # for descriptions see slope object and simulate method docstrings
-    # slope_params = (5, 20)
-    # # simulate movement using given parameters
-    # t, x, y, tf = sim.simulate(slope_params, 9.81, 30, 10)
+    # create a simulator instance
+    sim = LinearSlope()
+    # set slope coefficients
+    sim.set_slope_coef(2.0, 6.0)
+    # simulate movement
+    t, x, y, tf = sim.simulate()
 
-    sim = QuadraticSlope()
-    slope_params = (5, 10, 0.5)
-    t, x, y, tf = sim.simulate(slope_params, 9.81, 30, 100)
-    
-    print(f"slope params: {slope_params}")
-    print(f"finish time: {tf}")
+    # sim = QuadraticSlope()
+    # sim.set_slope_coef(5, 10, 0.6)
+    # t, x, y, tf = sim.simulate()
 
     plot_sim_results(t, x, y)

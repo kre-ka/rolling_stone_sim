@@ -51,8 +51,10 @@ class _Slope:
         '''
         gives numerical version of y, y' and y'' equations
         
-        self._y_f = (y, y', y'') = y((x, x', x''), slope_coef)
+        self._y_f = y(x, slope_coef)
+        self._y_full_f = (y, y', y'') = y((x, x', x''), slope_coef)
         '''
+        self._y_f = sym.lambdify([self._x, self._slope_coef], self._y)
         # y = [y, y', y'']
         y = [self._y, self._y.diff(self._t), self._y.diff(self._t, self._t)]
         # x = [x, x', x'']
@@ -62,42 +64,50 @@ class _Slope:
         y = [y_i.subs(self._x.diff(self._t, self._t), x[2])\
                 .subs(self._x.diff(self._t), x[1])\
                 for y_i in y]
-        self._y_f = sym.lambdify([(x[0], x[1], x[2]), self._slope_coef], y)
+        self._y_full_f = sym.lambdify([(x[0], x[1], x[2]), self._slope_coef], y)
 
-    def simulate(self, slope_coef, xf, g=9.81, t_max=30, t_res=10):
+    def set_slope_coef(self, slope_coef, slope_length):
         '''
-        slope_coef - coefficients of a slope polynomial, can vary between child classes
+        expand this method in child class to support more user-friendly parameters
+        
+        slope_coef: tuple of slope polynomial coefficient values
 
-        xf - finish x [m] - simulation terminates on reaching x=xf
+        slope_length: x coordinate of finish point
+        '''
+        # 'n' stands for 'numerical' - used to distinguish from abstract coefficients in self._slope_coef 
+        self._slope_coef_n = slope_coef
+        self._xf = slope_length
 
+    def simulate(self, g=9.81, t_max=30, t_res=10):
+        '''
         g - gravity constant, default: 9.81 [m/s**2]
 
         t_max - max simulation time, default: 30 [s]
 
         t_res - time resolution, default: 10 [Hz]
 
-        returns (t, x, y, tf) - movement vectors and finish time
+        returns (t, (x, x', x''), (y, y', y''), tf) - movement vectors and finish time
         '''
         # stop on reaching x=xf
         def event_finish(t, x, slope_coef, g):
-            return x[0] - xf
+            return x[0] - self._xf
         event_finish.terminal = True
         # evaluation times vector
         t = np.linspace(0, t_max, int(t_max*t_res))
         initial_conditions = (0, 0)  # (x(0) [m], x'(0) [m/s])
         # solve dynamics equation numerically with given parameters
-        sol = solve_ivp(self._dyn_eq_f, (0, t_max), initial_conditions, args=(slope_coef, g), t_eval=t, events=[event_finish])
+        sol = solve_ivp(self._dyn_eq_f, (0, t_max), initial_conditions, args=(self._slope_coef_n, g), t_eval=t, events=[event_finish])
         # print(sol)
         t = sol.t
         # this gives x and x'
         x = sol.y
         # this gives x''
-        a = self._dyn_eq_f(t, x, slope_coef, g)[1]
+        a = self._dyn_eq_f(t, x, self._slope_coef_n, g)[1]
         # concatenate a into x for array (x, x', x'')
         if not isinstance(a, np.ndarray):
             a = np.full(len(x[0]), a)
         x = np.row_stack((x,a))
-        y = self._y_f(x, slope_coef)
+        y = self._y_full_f(x, self._slope_coef_n)
         tf = sol.t_events[0][0]
         return t, x, y, tf
     
@@ -115,23 +125,25 @@ class LinearSlope(_Slope):
 
         self.calc_equations()
     
-    def simulate(self, slope_params, g=9.81, t_max=30, t_res=10):
+    def set_slope_coef(self, height, length):
         '''
-
-        slope_params = (y0, xf) - start and finish point coordinates i.e. (0, y0), (xf, 0) [m]
-
+        Slope goes from point (0, height) to (length, 0)
+        '''
+        B = height
+        A = -B / length
+        super().set_slope_coef((A, B), length)
+    
+    def simulate(self, g=9.81, t_max=30, t_res=10):
+        '''
         g - gravity constant, default: 9.81 [m/s**2]
 
         t_max - max simulation time, default: 30 [s]
 
         t_res - time resolution, default: 10 [Hz]
 
-        returns (t, x, y) vectors
+        returns (t, (x, x', x''), (y, y', y''), tf) - movement vectors and finish time
         '''
-        y0, xf = slope_params
-        B = y0
-        A = -B / xf
-        return super().simulate((A, B), xf, g, t_max, t_res)
+        return super().simulate(g, t_max, t_res)
 
 
 class QuadraticSlope(_Slope):
@@ -147,26 +159,29 @@ class QuadraticSlope(_Slope):
 
         self.calc_equations()
 
-    def simulate(self, slope_params, g, t_max, t_res):
+    def set_slope_coef(self, height, length, steepness):
         '''
-        initial_conditions = (x(0), x'(0)) ([m], [m/s])
+        Slope goes from point (0, height) to (length, 0)
 
-        slope_params = (y0, xf, steepness) - start and finish point coordinates i.e. (0, y0), (xf, 0) [m],
-                                             slope steepness parameter in range [0, 1)
+        steepness - float in range [0, 1), higher value - steeper slope (0 makes linear slope)
+        '''
+        C = height
+        B = - height/(length*(1-steepness))
+        A = - steepness*B/length
+        super().set_slope_coef((A, B, C), length)
+    
 
+    def simulate(self, g, t_max, t_res):
+        '''
         g - gravity constant [m/s**2]
 
         t_max - max simulation time [s]
 
         t_res - time resolution [Hz]
 
-        returns (t, x, y) vectors
+        returns (t, (x, x', x''), (y, y', y''), tf) - movement vectors and finish time
         '''
-        y0, xf, s = slope_params
-        C = y0
-        B = - y0/(xf*(1-s))
-        A = - s*B/xf
-        return super().simulate((A, B, C), xf, g, t_max, t_res)
+        return super().simulate(g, t_max, t_res)
 
 
 # may not work in real time if time resolution is too large

@@ -1,4 +1,5 @@
 venv/
+rolling_stone_sim_env/
 .ipynb_checkpoints/
 sandbox.ipynb
 __pycache__
