@@ -3,7 +3,7 @@ import numpy as np
 from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
-
+import ipywidgets as widgets
 
 # base class, don't use it on its own
 class _Slope:
@@ -133,6 +133,27 @@ class LinearSlope(_Slope):
         A = -B / length
         super().set_slope_coef((A, B), length)
     
+    def model_slope(self):
+        fig, ax = plt.subplots()
+        fig.set_size_inches(6,6)
+        ax.set_aspect("equal", adjustable="datalim")
+        fig.canvas.header_visible = False
+        
+        lines = plt.plot(0,0)
+        plt.axhline(color='black', ls='--', lw=1, alpha=0.5)
+        plt.axvline(color='black', ls='--', lw=1, alpha=0.5)
+
+        def plot(height=1.0, length=1.0):
+            self.set_slope_coef(height, length)
+            x = np.linspace(0, length, int(10 * length))
+            y = self._y_f(x, self._slope_coef_n)
+            lines[0].set_data(x, y)
+            ax.relim()
+            ax.autoscale_view()
+            plt.show()
+        
+        widgets.interact(plot, height=(0.1, 2.0, 0.1), length=(0.1, 2.0, 0.1))
+
     def simulate(self, g=9.81, t_max=30, t_res=10):
         '''
         g - gravity constant, default: 9.81 [m/s**2]
@@ -170,6 +191,26 @@ class QuadraticSlope(_Slope):
         A = - steepness*B/length
         super().set_slope_coef((A, B, C), length)
     
+    def model_slope(self):
+        fig, ax = plt.subplots()
+        fig.set_size_inches(6,6)
+        ax.set_aspect("equal", adjustable="datalim")
+        fig.canvas.header_visible = False
+        
+        lines = plt.plot(0,0)
+        plt.axhline(color='black', ls='--', lw=1, alpha=0.5)
+        plt.axvline(color='black', ls='--', lw=1, alpha=0.5)
+
+        def plot(height=1.0, length=1.0, steepness=0.5):
+            self.set_slope_coef(height, length, steepness)
+            x = np.linspace(0, length, int(20 * length))
+            y = self._y_f(x, self._slope_coef_n)
+            lines[0].set_data(x, y)
+            ax.relim()
+            ax.autoscale_view()
+            plt.show()
+        
+        widgets.interact(plot, height=(0.1, 2.0, 0.1), length=(0.1, 2.0, 0.1), steepness=(0.0, 0.9, 0.01))
 
     def simulate(self, g, t_max, t_res):
         '''
