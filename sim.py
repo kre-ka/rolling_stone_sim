@@ -212,7 +212,7 @@ class QuadraticSlope(_Slope):
         
         widgets.interact(plot, height=(0.1, 2.0, 0.1), length=(0.1, 2.0, 0.1), steepness=(0.0, 0.9, 0.01))
 
-    def simulate(self, g, t_max, t_res):
+    def simulate(self, g=9.81, t_max=30, t_res=10):
         '''
         g - gravity constant [m/s**2]
 
