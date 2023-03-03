@@ -363,6 +363,8 @@ def plot_sim_results(t, x, y):
     axs[2][2].set_ylim(a_lim)
     line_ax, = axs[2][2].plot(t_plt, a_plt)
 
+    plt.tight_layout()
+
     def animate(i):
         t_plt.append(t[i])
         x_plt.append(x[i])
