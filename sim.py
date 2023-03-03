@@ -142,6 +142,7 @@ class LinearSlope(_Slope):
         lines = plt.plot(0,0)
         plt.axhline(color='black', ls='--', lw=1, alpha=0.5)
         plt.axvline(color='black', ls='--', lw=1, alpha=0.5)
+        plt.ion()
 
         def plot(height=1.0, length=1.0):
             self.set_slope_coef(height, length)
@@ -150,7 +151,6 @@ class LinearSlope(_Slope):
             lines[0].set_data(x, y)
             ax.relim()
             ax.autoscale_view()
-            plt.show()
         
         widgets.interact(plot, height=(0.1, 2.0, 0.1), length=(0.1, 2.0, 0.1))
 
@@ -200,6 +200,7 @@ class QuadraticSlope(_Slope):
         lines = plt.plot(0,0)
         plt.axhline(color='black', ls='--', lw=1, alpha=0.5)
         plt.axvline(color='black', ls='--', lw=1, alpha=0.5)
+        plt.ion()
 
         def plot(height=1.0, length=1.0, steepness=0.5):
             self.set_slope_coef(height, length, steepness)
@@ -208,7 +209,6 @@ class QuadraticSlope(_Slope):
             lines[0].set_data(x, y)
             ax.relim()
             ax.autoscale_view()
-            plt.show()
         
         widgets.interact(plot, height=(0.1, 2.0, 0.1), length=(0.1, 2.0, 0.1), steepness=(0.0, 0.9, 0.01))
 
@@ -364,6 +364,7 @@ def plot_sim_results(t, x, y):
     line_ax, = axs[2][2].plot(t_plt, a_plt)
 
     plt.tight_layout()
+    plt.ion()
 
     def animate(i):
         t_plt.append(t[i])
