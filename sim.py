@@ -78,7 +78,7 @@ class _Slope:
         self._slope_coef_n = slope_coef
         self._xf = slope_length
 
-    def simulate(self, g=9.81, t_max=30, t_res=10):
+    def simulate(self, g=9.81, t_max=30, t_res=10, terminate=True):
         '''
         g - gravity constant, default: 9.81 [m/s**2]
 
@@ -96,7 +96,10 @@ class _Slope:
         t = np.linspace(0, t_max, int(t_max*t_res))
         initial_conditions = (0, 0)  # (x(0) [m], x'(0) [m/s])
         # solve dynamics equation numerically with given parameters
-        sol = solve_ivp(self._dyn_eq_f, (0, t_max), initial_conditions, args=(self._slope_coef_n, g), t_eval=t, events=[event_finish])
+        if terminate:
+            sol = solve_ivp(self._dyn_eq_f, (0, t_max), initial_conditions, args=(self._slope_coef_n, g), t_eval=t, events=[event_finish])
+        else:
+            sol = solve_ivp(self._dyn_eq_f, (0, t_max), initial_conditions, args=(self._slope_coef_n, g), t_eval=t)
         # print(sol)
         t = sol.t
         # this gives x and x'
@@ -108,7 +111,10 @@ class _Slope:
             a = np.full(len(x[0]), a)
         x = np.row_stack((x,a))
         y = self._y_full_f(x, self._slope_coef_n)
-        tf = sol.t_events[0][0]
+        if terminate:
+            tf = sol.t_events[0][0]
+        else:
+            tf = None
         return t, x, y, tf
     
 
@@ -154,7 +160,7 @@ class LinearSlope(_Slope):
         
         widgets.interact(plot, height=(0.1, 2.0, 0.1), length=(0.1, 2.0, 0.1))
 
-    def simulate(self, g=9.81, t_max=30, t_res=10):
+    def simulate(self, g=9.81, t_max=30, t_res=10, terminate=True):
         '''
         g - gravity constant, default: 9.81 [m/s**2]
 
@@ -164,7 +170,7 @@ class LinearSlope(_Slope):
 
         returns (t, (x, x', x''), (y, y', y''), tf) - movement vectors and finish time
         '''
-        return super().simulate(g, t_max, t_res)
+        return super().simulate(g, t_max, t_res, terminate)
 
 
 class QuadraticSlope(_Slope):
@@ -212,7 +218,7 @@ class QuadraticSlope(_Slope):
         
         widgets.interact(plot, height=(0.1, 2.0, 0.1), length=(0.1, 2.0, 0.1), steepness=(0.0, 0.9, 0.01))
 
-    def simulate(self, g=9.81, t_max=30, t_res=10):
+    def simulate(self, g=9.81, t_max=30, t_res=10, terminate=True):
         '''
         g - gravity constant [m/s**2]
 
@@ -222,7 +228,7 @@ class QuadraticSlope(_Slope):
 
         returns (t, (x, x', x''), (y, y', y''), tf) - movement vectors and finish time
         '''
-        return super().simulate(g, t_max, t_res)
+        return super().simulate(g, t_max, t_res, terminate)
 
 
 # may not work in real time if time resolution is too large
