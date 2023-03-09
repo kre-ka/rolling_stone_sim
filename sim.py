@@ -97,9 +97,9 @@ class _Slope:
         initial_conditions = (0, 0)  # (x(0) [m], x'(0) [m/s])
         # solve dynamics equation numerically with given parameters
         if terminate:
-            sol = solve_ivp(self._dyn_eq_f, (0, t_max), initial_conditions, args=(self._slope_coef_n, g), t_eval=t, events=[event_finish])
+            sol = solve_ivp(self._dyn_eq_f, (0, t_max), initial_conditions, method='Radau', args=(self._slope_coef_n, g), t_eval=t, events=[event_finish])
         else:
-            sol = solve_ivp(self._dyn_eq_f, (0, t_max), initial_conditions, args=(self._slope_coef_n, g), t_eval=t)
+            sol = solve_ivp(self._dyn_eq_f, (0, t_max), initial_conditions, method='Radau', args=(self._slope_coef_n, g), t_eval=t)
         # print(sol)
         t = sol.t
         # this gives x and x'
