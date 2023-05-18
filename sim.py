@@ -10,9 +10,9 @@ class Curve:
     def __init__(self) -> None:
         self.t = sym.Symbol('t', real=True)
 
-        self.x = self.t
-        self.y = self.t**2
-        self.t_span = [-1, 1]
+        self.x = 0.3*sym.cos(3*self.t)
+        self.y = 2*sym.sin(1*self.t)
+        self.t_span = [-2.8, -np.pi+2.8]
         
         self.x_f = sym.lambdify(self.t, self.x)
         self.y_f = sym.lambdify(self.t, self.y)
@@ -25,25 +25,32 @@ class Sim:
         p_integrand = sym.sqrt(sym.diff(self._curve.x, self._curve.t)**2 + sym.diff(self._curve.y, self._curve.t)**2)
         p_integrand_f = sym.lambdify(self._curve.t, p_integrand)
 
-        k = (sym.diff(self._curve.y, self._curve.t) / sym.diff(self._curve.x, self._curve.t)).simplify()
-        k_f = sym.lambdify(self._curve.t, k)
-
-        # use these tables to interpolate continous k(p) and t(p) functions
+        # curve steepness
+        k = (sym.diff(self._curve.y, self._curve.t) / sym.Abs(sym.diff(self._curve.x, self._curve.t))).simplify()
+        
+        # this is acceleration from steepness in g units
+        # it handles the vertical line situation (infinite k)
+        a = sym.Piecewise(
+            (-sym.sign(k), sym.Eq(sym.Abs(k), sym.oo)),
+            (-k/(1+k**2)**0.5, True)).simplify()
+        a_f = sym.lambdify(self._curve.t, a)
+        
+        # use these tables to interpolate continuous a(p) and t(p) functions
         # TODO: try to make these uniformly distributed in p, not t
         t_span = self._curve.t_span
         t = np.linspace(t_span[0], t_span[1], int((t_span[1]-t_span[0])*100+1))
         # TODO: maybe doing it in steps wold be computationally better than starting from t0 every time, need to check
-        p_table = [quad(p_integrand_f, t[0], u_lim)[0] for u_lim in t]
-        k_table = k_f(t)
+        p_table = np.array([quad(p_integrand_f, t[0], u_lim)[0] for u_lim in t])
+        a_table = a_f(t)
 
-        # k(p)
-        self._k_f = CubicSpline(p_table, k_table)
+        # a(p)
+        self._a_f = CubicSpline(p_table, a_table)
         # t(p)
         self._t_p_f = CubicSpline(p_table, t)
 
     def _dyn_eq_f(self, t, state, g):
             p, v = state
-            return [v, -g*self._k_f(p)/(1+self._k_f(p)**2)**0.5]
+            return [v, g*self._a_f(p)]
 
     def simulate(self, g=9.81, t_max=30, t_res=100):
         '''
@@ -53,7 +60,17 @@ class Sim:
 
         t_res - time resolution, default: 10 [Hz]
 
-        returns (t, (x, x', x''), (y, y', y''), tf) - movement vectors and finish time
+        returns:
+
+        t - evaluation times array
+
+        (p, p', p'') - states array in path coordinates
+
+        path_xy - path points
+
+        x - x positions array
+
+        y - y positions array
         '''
         # evaluation times vector
         t = np.linspace(0, t_max, int(t_max*t_res))
@@ -67,14 +84,10 @@ class Sim:
         # this gives x''
         a = self._dyn_eq_f(t, p, g)[1]
         # concatenate a into x for array (x, x', x'')
-        # this check won't be needed, i guess
-        # if not isinstance(a, np.ndarray):
-        #     a = np.full(len(p[0]), a)
         p = np.row_stack((p,a))
         x, y = self.evaluate_x_y(p[0])
-        tf = None
         path_xy = self.eval_path_points()
-        return t, p, path_xy, x, y, tf
+        return t, p, path_xy, x, y
 
     def evaluate_x_y(self, p_arr):
         t_arr = self._t_p_f(p_arr)
