@@ -52,6 +52,10 @@ class Sim:
             p, v = state
             return [v, g*self._a_f(p)]
 
+    def _dyn_eq_jac_f(self, t, state, g):
+        p, v = state
+        return [[0, 1], [g*self._a_f.derivative()(p), 0]]
+
     def simulate(self, g=9.81, t_max=30, t_res=100):
         '''
         g - gravity constant, default: 9.81 [m/s**2]
@@ -76,7 +80,7 @@ class Sim:
         t = np.linspace(0, t_max, int(t_max*t_res))
         initial_conditions = (0, 0)  # (p(0) [m], p'(0) [m/s])
         # solve dynamics equation numerically with given parameters
-        sol = solve_ivp(self._dyn_eq_f, (0, t_max), initial_conditions, method='Radau', args=(g,), t_eval=t)
+        sol = solve_ivp(self._dyn_eq_f, (0, t_max), initial_conditions, method='Radau', args=(g,), t_eval=t, jac=self._dyn_eq_jac_f)
         # print(sol)
         t = sol.t
         # this gives p and p'
