@@ -58,7 +58,7 @@ class Sim:
 
         t_max - max simulation time, default: 30 [s]
 
-        t_res - time resolution, default: 10 [Hz]
+        t_res - time resolution, default: 100 [Hz]
 
         returns:
 
@@ -83,7 +83,7 @@ class Sim:
         p = sol.y
         # this gives x''
         a = self._dyn_eq_f(t, p, g)[1]
-        # concatenate a into x for array (x, x', x'')
+        # concatenate a into p for array (p, p', p'')
         p = np.row_stack((p,a))
         x, y = self.evaluate_x_y(p[0])
         path_xy = self.eval_path_points()
