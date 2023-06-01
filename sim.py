@@ -103,7 +103,7 @@ class Sim:
         return x, y
 
 # may not work in real time if time resolution is too large
-def plot_sim_results(t, p, path_xy, x, y):
+def plot_sim_results(t, p, path_xy, x, y, speed=1.0):
     # make axis limits a little bigger than necessary
     def expand_limits(lim, amount):
         additional_range = (lim[1] - lim[0]) * amount
@@ -224,4 +224,4 @@ def plot_sim_results(t, p, path_xy, x, y):
         fig.canvas.draw_idle()
         fig.canvas.flush_events()
 
-    return FuncAnimation(plt.gcf(), animate, frames=len(x), interval=int((t[1]-t[0])*1000), repeat=False)
+    return FuncAnimation(plt.gcf(), animate, frames=len(x), interval=int((t[1]-t[0])*1000/speed), repeat=False)
