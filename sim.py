@@ -113,7 +113,7 @@ def calc_energy(p, y, g=9.81):
     return total_energy, kinetic_energy, potential_energy
 
 # may not work in real time if time resolution is too large
-def plot_sim_results(t, p, path_xy, x, y, speed=1.0):
+def plot_sim_results(t, p, path_xy, x, y, animated=True, speed=1.0):
     # make axis limits a little bigger than necessary
     def expand_limits(lim, amount):
         additional_range = (lim[1] - lim[0]) * amount
@@ -139,15 +139,26 @@ def plot_sim_results(t, p, path_xy, x, y, speed=1.0):
     a = p[2]
     p = p[0]
 
-    t_plt = []
-    x_plt = []
-    y_plt = []
-    p_plt = []
-    v_plt = []
-    a_plt = []
-    e_total_plt = []
-    e_kin_plt = []
-    e_pot_plt = []
+    if animated:
+        t_plt = []
+        x_plt = []
+        y_plt = []
+        p_plt = []
+        v_plt = []
+        a_plt = []
+        e_total_plt = []
+        e_kin_plt = []
+        e_pot_plt = []
+    else:
+        t_plt = t
+        x_plt = x
+        y_plt = y
+        p_plt = p
+        v_plt = v
+        a_plt = a
+        e_total_plt = e_total
+        e_kin_plt = e_kin
+        e_pot_plt = e_pot
 
     fig, axs = plt.subplots(2,3)
     fig.set_size_inches(10,7)
@@ -170,7 +181,8 @@ def plot_sim_results(t, p, path_xy, x, y, speed=1.0):
     axs[0][0].set_ylim(y_lim)
     axs[0][0].axis("scaled")
     line_yx, = axs[0][0].plot(path_xy[0], path_xy[1])
-    point_yx, = axs[0][0].plot(x_plt, y_plt, 'o')
+    if animated:
+        point_yx, = axs[0][0].plot(x_plt, y_plt, 'o')
 
     # e(t)
     axs[0][1].set_xlabel('t')
@@ -204,7 +216,6 @@ def plot_sim_results(t, p, path_xy, x, y, speed=1.0):
     line_at, = axs[1][2].plot(t_plt, a_plt)
 
     plt.tight_layout()
-    plt.ion()
 
     def animate(i):
         t_plt.append(t[i])
@@ -239,4 +250,6 @@ def plot_sim_results(t, p, path_xy, x, y, speed=1.0):
         fig.canvas.draw_idle()
         fig.canvas.flush_events()
 
-    return FuncAnimation(plt.gcf(), animate, frames=len(x), interval=int((t[1]-t[0])*1000/speed), repeat=False)
+    if animated:
+        plt.ion()
+        return FuncAnimation(plt.gcf(), animate, frames=len(x), interval=int((t[1]-t[0])*1000/speed), repeat=False)
