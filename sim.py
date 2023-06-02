@@ -106,6 +106,12 @@ class Sim:
         y = self._curve.y_f(t)
         return x, y
 
+def calc_energy(p, y, g=9.81):
+    kinetic_energy = (p[1,:]**2/2)
+    potential_energy = (y - y.min())*g
+    total_energy = kinetic_energy + potential_energy
+    return total_energy, kinetic_energy, potential_energy
+
 # may not work in real time if time resolution is too large
 def plot_sim_results(t, p, path_xy, x, y, speed=1.0):
     # make axis limits a little bigger than necessary
@@ -127,6 +133,7 @@ def plot_sim_results(t, p, path_xy, x, y, speed=1.0):
             x_lim = (x_middle - y_range/2, x_middle + y_range/2)
         return x_lim, y_lim
     
+    e_total, e_kin, e_pot = calc_energy(p, y)
 
     v = p[1]
     a = p[2]
@@ -138,6 +145,9 @@ def plot_sim_results(t, p, path_xy, x, y, speed=1.0):
     p_plt = []
     v_plt = []
     a_plt = []
+    e_total_plt = []
+    e_kin_plt = []
+    e_pot_plt = []
 
     fig, axs = plt.subplots(2,3)
     fig.set_size_inches(10,7)
@@ -150,30 +160,27 @@ def plot_sim_results(t, p, path_xy, x, y, speed=1.0):
     p_lim = expand_limits((p.min(), p.max()), 0.05)
     v_lim = expand_limits((v.min(), v.max()), 0.05)
     a_lim = expand_limits((a.min(), a.max()), 0.05)
-
-    # x(t)
-    axs[0][0].set_xlabel('t')
-    axs[0][0].set_ylabel('x')
-    axs[0][0].set_xlim(t_lim)
-    axs[0][0].set_ylim(x_lim)
-    line_xt, = axs[0][0].plot(t_plt, x_plt)
-
-    # y(t)
-    axs[0][1].set_xlabel('t')
-    axs[0][1].set_ylabel('y')
-    axs[0][1].set_xlim(t_lim)
-    axs[0][1].set_ylim(y_lim)
-    line_yt, = axs[0][1].plot(t_plt, y_plt)
+    e_lim = expand_limits((min(e_total.min(), e_kin.min(), e_pot.min()), max(e_total.max(), e_kin.max(), e_pot.max())), 0.05)
 
     # y(x)
     x_lim, y_lim = equalize_axis_scales(x_lim, y_lim)
-    axs[0][2].set_xlabel('x')
-    axs[0][2].set_ylabel('y')
-    axs[0][2].set_xlim(x_lim)
-    axs[0][2].set_ylim(y_lim)
-    axs[0][2].axis("scaled")
-    line_yx, = axs[0][2].plot(path_xy[0], path_xy[1])
-    point_yx, = axs[0][2].plot(x_plt, y_plt, 'o')
+    axs[0][0].set_xlabel('x')
+    axs[0][0].set_ylabel('y')
+    axs[0][0].set_xlim(x_lim)
+    axs[0][0].set_ylim(y_lim)
+    axs[0][0].axis("scaled")
+    line_yx, = axs[0][0].plot(path_xy[0], path_xy[1])
+    point_yx, = axs[0][0].plot(x_plt, y_plt, 'o')
+
+    # e(t)
+    axs[0][1].set_xlabel('t')
+    axs[0][1].set_ylabel('E')
+    axs[0][1].set_xlim(t_lim)
+    axs[0][1].set_ylim(e_lim)
+    line_e_total_t, = axs[0][1].plot(t_plt, e_total_plt)
+    line_e_kin_t, = axs[0][1].plot(t_plt, e_kin_plt)
+    line_e_pot_t, = axs[0][1].plot(t_plt, e_pot_plt)
+    axs[0][1].legend(['Total Energy', 'Kinetic Energy', 'Potential Energy'])
 
     # p(t)
     axs[1][0].set_xlabel('t')
@@ -206,15 +213,19 @@ def plot_sim_results(t, p, path_xy, x, y, speed=1.0):
         p_plt.append(p[i])
         v_plt.append(v[i])
         a_plt.append(a[i])
-
-        line_xt.set_xdata(t_plt)
-        line_xt.set_ydata(x_plt)
-
-        line_yt.set_xdata(t_plt)
-        line_yt.set_ydata(y_plt)
+        e_total_plt.append(e_total[i])
+        e_kin_plt.append(e_kin[i])
+        e_pot_plt.append(e_pot[i])
 
         point_yx.set_xdata(x[i])
         point_yx.set_ydata(y[i])
+
+        line_e_total_t.set_xdata(t_plt)
+        line_e_total_t.set_ydata(e_total_plt)
+        line_e_kin_t.set_xdata(t_plt)
+        line_e_kin_t.set_ydata(e_kin_plt)
+        line_e_pot_t.set_xdata(t_plt)
+        line_e_pot_t.set_ydata(e_pot_plt)
 
         line_pt.set_xdata(t_plt)
         line_pt.set_ydata(p_plt)
