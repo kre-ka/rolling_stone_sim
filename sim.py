@@ -268,3 +268,10 @@ def plot_sim_results(t, p, path_xy, x, y, animated=True, speed=1.0):
     if animated:
         plt.ion()
         return FuncAnimation(plt.gcf(), animate, frames=len(x), interval=int((t[1]-t[0])*1000/speed), repeat=False)
+
+
+if __name__ == '__main__':
+    sim = Sim(Curve())
+    t, p, path_xy, x, y = sim.simulate(t_max=10.0)
+    plot_sim_results(t, p, path_xy, x, y, animated=False)
+    plt.show()
