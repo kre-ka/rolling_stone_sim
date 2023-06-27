@@ -1,22 +1,100 @@
+from typing import Tuple, Dict
 import sympy as sym
 import numpy as np
 from scipy.integrate import solve_ivp, quad
 from scipy.interpolate import CubicSpline
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+import ipywidgets as widgets
 
 
 class Curve:
+    def __init__(self, t: sym.Symbol, x: sym.Expr, y: sym.Expr, t_span: Tuple[float, float]) -> None:
+        self.t = t
+        self.x = x
+        self.y = y
+        self.t_span = t_span
+        
+        self.x_f = sym.lambdify(t, x)
+        self.y_f = sym.lambdify(t, y)
+
+
+class CurveModeler:
     def __init__(self) -> None:
         self.t = sym.Symbol('t', real=True)
+        self.params = dict(zip(('Ax Ay wx wy'.split()), sym.symbols('A_x A_y w_w w_y', real=True)))
+        self.x = self.params['Ax']*sym.cos(self.params['wx']*self.t)
+        self.y = self.params['Ay']*sym.sin(self.params['wy']*self.t)
 
-        self.x = 0.3*sym.cos(3*self.t)
-        self.y = 2*sym.sin(1*self.t)
-        self.t_span = [-2.8, -np.pi+2.8]
+        self.slider_params = {'Ax': {'min': -3, 'max': 3, 'step': 0.1, 'value': 0.3},
+                              'Ay': {'min': -3, 'max': 3, 'step': 0.1, 'value': 2},
+                              'wx': {'min': -5, 'max': 5, 'step': 0.1, 'value': 3},
+                              'wy': {'min': -5, 'max': 5, 'step': 0.1, 'value': 1},
+                              't_0': {'min': -np.pi, 'max': np.pi*(1-0.05), 'step': np.pi*0.05, 'value': -2.8},
+                              't_n': {'min': -np.pi*(1-0.05), 'max': np.pi, 'step': np.pi*0.05, 'value': -np.pi+2.8}}
         
-        self.x_f = sym.lambdify(self.t, self.x)
-        self.y_f = sym.lambdify(self.t, self.y)
+        self.set_params({key: slider['value'] for (key, slider) in self.slider_params.items()},
+                        [self.slider_params['t_0']['value'], self.slider_params['t_n']['value']])
+        
+        self.x_f = sym.lambdify([self.t, self.params.values()], self.x)
+        self.y_f = sym.lambdify([self.t, self.params.values()], self.y)
+    
+    def set_params(self, params, t_span):
+        self.params_n = params
+        self.t_span = t_span
 
+    @staticmethod
+    def _make_sliders(params: Dict[str, Dict[str, float]]) -> Dict[str, widgets.FloatSlider]:
+        sliders = {}
+        for item in params.items():
+            sliders[item[0]] = widgets.FloatSlider(**item[1])
+        return sliders
+
+    def model_curve(self):
+        fig, ax = plt.subplots()
+        fig.set_size_inches(6, 6)
+        ax.set_aspect('equal', adjustable='datalim')
+        fig.canvas.header_visible = False
+
+        lines = plt.plot(0, 0)
+        plt.ion()
+
+        def plot(**params):
+            # split params into groups
+            # all but t_0, t_n
+            f_params = {key: params[key] for key in params.keys() if key not in ('t_0', 't_n')}
+            # t_0, t_n
+            t_span = {key: params[key] for key in params.keys() if key in ('t_0', 't_n')}
+
+            t = np.linspace(t_span['t_0'], t_span['t_n'], int((t_span['t_n']-t_span['t_0'])*100+1))
+
+            # this is order-sensitive
+            x = self.x_f(t, f_params.values())
+            y = self.y_f(t, f_params.values())
+            self.set_params(f_params, list(t_span.values()))
+
+            lines[0].set_data(x, y)
+            ax.relim()
+            ax.autoscale_view()
+        
+        # this ensures t_n isn't smaller than t_0
+        def update_t_n_range(*args):
+            sliders['t_n'].min = sliders['t_0'].value + sliders['t_n'].step     
+        
+        sliders = self._make_sliders(self.slider_params)
+        sliders['t_0'].observe(update_t_n_range, 'value')
+        widgets.interact(plot, **sliders)
+    
+    def generate_curve(self) -> Curve:
+        x = self.x
+        y = self.y
+        # requires self.params and self.param_n to have matching values in the same keys
+        for key in self.params.keys():
+            x = x.subs(self.params[key], self.params_n[key])
+            y = y.subs(self.params[key], self.params_n[key])
+        curve = Curve(self.t, x, y, self.t_span)
+        return curve
+           
 
 class Sim:
     def __init__(self, curve: Curve) -> None:
