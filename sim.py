@@ -22,19 +22,19 @@ class Curve:
 class CurveModeler:
     def __init__(self, t: sym.Symbol, f_params: Dict[str, sym.Symbol], x: sym.Expr, y: sym.Expr, slider_params: Dict[str, Dict[str, float]]) -> None:
         self.t = t
-        self.params = f_params
+        self.f_params = f_params
         self.x = x
         self.y = y
         self.slider_params = slider_params
         
-        self.set_params({key: slider['value'] for (key, slider) in self.slider_params.items()},
-                        [self.slider_params['t_0']['value'], self.slider_params['t_n']['value']])
+        self.set_numeric_f_params({key: slider['value'] for (key, slider) in self.slider_params.items()},
+                                  [self.slider_params['t_0']['value'], self.slider_params['t_n']['value']])
         
-        self.x_f = sym.lambdify([self.t, self.params.values()], self.x)
-        self.y_f = sym.lambdify([self.t, self.params.values()], self.y)
+        self.x_f = sym.lambdify([self.t, self.f_params.values()], self.x)
+        self.y_f = sym.lambdify([self.t, self.f_params.values()], self.y)
     
-    def set_params(self, params, t_span):
-        self.params_n = params
+    def set_numeric_f_params(self, f_params_num, t_span):
+        self.f_params_num = f_params_num
         self.t_span = t_span
 
     @staticmethod
@@ -55,7 +55,7 @@ class CurveModeler:
 
         def plot(**params):
             # split params into groups
-            # all but t_0, t_n
+            # function params, that is all but t_0, t_n
             f_params = {key: params[key] for key in params.keys() if key not in ('t_0', 't_n')}
             # t_0, t_n
             t_span = {key: params[key] for key in params.keys() if key in ('t_0', 't_n')}
@@ -65,7 +65,7 @@ class CurveModeler:
             # this is order-sensitive
             x = self.x_f(t, f_params.values())
             y = self.y_f(t, f_params.values())
-            self.set_params(f_params, list(t_span.values()))
+            self.set_numeric_f_params(f_params, list(t_span.values()))
 
             lines[0].set_data(x, y)
             ax.relim()
@@ -82,10 +82,10 @@ class CurveModeler:
     def generate_curve(self) -> Curve:
         x = self.x
         y = self.y
-        # requires self.params and self.param_n to have matching values in the same keys
-        for key in self.params.keys():
-            x = x.subs(self.params[key], self.params_n[key])
-            y = y.subs(self.params[key], self.params_n[key])
+        # requires self.f_params and self.f_params_num to have matching values in the same keys
+        for key in self.f_params.keys():
+            x = x.subs(self.f_params[key], self.f_params_num[key])
+            y = y.subs(self.f_params[key], self.f_params_num[key])
         curve = Curve(self.t, x, y, self.t_span)
         return curve
            
