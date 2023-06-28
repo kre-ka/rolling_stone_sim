@@ -28,12 +28,12 @@ class CurveModeler:
         self.slider_params = slider_params
         
         self.set_numeric_f_params({key: slider['value'] for (key, slider) in self.slider_params.items()},
-                                  [self.slider_params['t_0']['value'], self.slider_params['t_n']['value']])
+                                  (self.slider_params['t_0']['value'], self.slider_params['t_n']['value']))
         
         self.x_f = sym.lambdify([self.t, self.f_params.values()], self.x)
         self.y_f = sym.lambdify([self.t, self.f_params.values()], self.y)
     
-    def set_numeric_f_params(self, f_params_num, t_span):
+    def set_numeric_f_params(self, f_params_num: Dict[str, float], t_span: Tuple[float, float]):
         self.f_params_num = f_params_num
         self.t_span = t_span
 
@@ -65,7 +65,7 @@ class CurveModeler:
             # this is order-sensitive
             x = self.x_f(t, f_params.values())
             y = self.y_f(t, f_params.values())
-            self.set_numeric_f_params(f_params, list(t_span.values()))
+            self.set_numeric_f_params(f_params, tuple(t_span.values()))
 
             lines[0].set_data(x, y)
             ax.relim()
