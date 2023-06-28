@@ -20,18 +20,12 @@ class Curve:
 
 
 class CurveModeler:
-    def __init__(self) -> None:
-        self.t = sym.Symbol('t', real=True)
-        self.params = dict(zip(('Ax Ay wx wy'.split()), sym.symbols('A_x A_y w_w w_y', real=True)))
-        self.x = self.params['Ax']*sym.cos(self.params['wx']*self.t)
-        self.y = self.params['Ay']*sym.sin(self.params['wy']*self.t)
-
-        self.slider_params = {'Ax': {'min': -3, 'max': 3, 'step': 0.1, 'value': 0.3},
-                              'Ay': {'min': -3, 'max': 3, 'step': 0.1, 'value': 2},
-                              'wx': {'min': -5, 'max': 5, 'step': 0.1, 'value': 3},
-                              'wy': {'min': -5, 'max': 5, 'step': 0.1, 'value': 1},
-                              't_0': {'min': -np.pi, 'max': np.pi*(1-0.05), 'step': np.pi*0.05, 'value': -2.8},
-                              't_n': {'min': -np.pi*(1-0.05), 'max': np.pi, 'step': np.pi*0.05, 'value': -np.pi+2.8}}
+    def __init__(self, t: sym.Symbol, f_params: Dict[str, sym.Symbol], x: sym.Expr, y: sym.Expr, slider_params: Dict[str, Dict[str, float]]) -> None:
+        self.t = t
+        self.params = f_params
+        self.x = x
+        self.y = y
+        self.slider_params = slider_params
         
         self.set_params({key: slider['value'] for (key, slider) in self.slider_params.items()},
                         [self.slider_params['t_0']['value'], self.slider_params['t_n']['value']])
