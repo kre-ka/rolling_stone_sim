@@ -21,6 +21,7 @@ class Curve:
 
 class CurveModeler:
     def __init__(self, t: sym.Symbol, f_params: Dict[str, sym.Symbol], x: sym.Expr, y: sym.Expr, slider_params: Dict[str, Dict[str, float]]) -> None:
+        self._check_matching_keys(f_params.keys(), slider_params.keys())
         self.t = t
         self.f_params = f_params
         self.x = x
@@ -32,6 +33,13 @@ class CurveModeler:
         
         self.x_f = sym.lambdify([self.t, self.f_params.values()], self.x)
         self.y_f = sym.lambdify([self.t, self.f_params.values()], self.y)
+    
+    @staticmethod
+    def _check_matching_keys(f_params_keys, slider_params_keys):
+        f_params_keys = tuple(f_params_keys)
+        slider_params_keys = tuple(key for key in slider_params_keys if key not in ('t_0', 't_n'))
+        if f_params_keys != slider_params_keys:
+            raise ValueError("f_params and slider_params dict keys don't match or their order doesn't match")
     
     def set_numeric_f_params(self, f_params_num: Dict[str, float], t_span: Tuple[float, float]):
         self.f_params_num = f_params_num
