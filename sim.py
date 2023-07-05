@@ -6,6 +6,7 @@ from scipy.interpolate import CubicSpline
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import ipywidgets as widgets
+from time import time
 
 
 class Curve:
@@ -207,8 +208,11 @@ def calc_energy(p, y, g=9.81):
     total_energy = kinetic_energy + potential_energy
     return total_energy, kinetic_energy, potential_energy
 
+# this is to evaluate animation execution
+anim_frame_time_list = []
+
 # may not work in real time if time resolution is too large
-def plot_sim_results(t, p, path_xy, x, y, animated=True, speed=1.0):
+def plot_sim_results(t, p, path_xy, x, y, animated=True, speed=1.0, eval_animation=False):
     # make axis limits a little bigger than necessary
     def expand_limits(lim, amount):
         additional_range = (lim[1] - lim[0]) * amount
@@ -335,21 +339,32 @@ def plot_sim_results(t, p, path_xy, x, y, animated=True, speed=1.0):
         line_vt.set_data(t[:i], v[:i])
         line_at.set_data(t[:i], a[:i])
 
-        line_pt.set_xdata(t_plt)
-        line_pt.set_ydata(p_plt)
+        # there should be "if eval_animation:" here, but it's too slow
+        anim_frame_time_list.append(time())
 
         return point_yx, line_e_total_t, line_e_kin_t, line_e_pot_t, line_pt, line_vt, line_at
 
     if animated:
-        return FuncAnimation(plt.gcf(), animate, init_func=init, frames=len(x), interval=int((t[1]-t[0])*1000/speed), 
+        interval = int((t[1]-t[0])*1000/speed)
+        if eval_animation:
+            print(f"expected interval [ms]: {interval}")
+            print(f"expected total time [s]: {(t[-1]-t[0])/speed}")
+        return FuncAnimation(plt.gcf(), animate, init_func=init, frames=len(x), interval=interval, 
                              repeat=False, blit=True)
 
-        fig.canvas.draw_idle()
-        fig.canvas.flush_events()
+def eval_frame_processing_time():
+    if not anim_frame_time_list:
+        print("You need to set eval_animation=True for plot_sim_results")
+        return
 
-    if animated:
-        plt.ion()
-        return FuncAnimation(plt.gcf(), animate, frames=len(x), interval=int((t[1]-t[0])*1000/speed), repeat=False)
+    anim_frame_time_arr = np.array(anim_frame_time_list)
+    intervals = anim_frame_time_arr[1:] - anim_frame_time_arr[:-1]
+    total_time = anim_frame_time_arr[-1] - anim_frame_time_arr[0]
+    print(f"average interval [ms]: {np.average(intervals)*1000}")
+    print(f"total time [s]: {total_time}")
+
+def reset_frame_processing_time_counter():
+    anim_frame_time_list.clear()
 
 
 if __name__ == '__main__':
