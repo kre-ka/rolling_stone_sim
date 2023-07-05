@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import ipywidgets as widgets
 from time import time
+from math import ceil
 
 
 class Curve:
@@ -212,7 +213,7 @@ def calc_energy(p, y, g=9.81):
 anim_frame_time_list = []
 
 # may not work in real time if time resolution is too large
-def plot_sim_results(t, p, path_xy, x, y, animated=True, speed=1.0, eval_animation=False):
+def plot_sim_results(t, p, path_xy, x, y, animated=True, interval=20, speed=1.0, eval_animation=False):
     # make axis limits a little bigger than necessary
     def expand_limits(lim, amount):
         additional_range = (lim[1] - lim[0]) * amount
@@ -345,16 +346,33 @@ def plot_sim_results(t, p, path_xy, x, y, animated=True, speed=1.0, eval_animati
         return point_yx, line_e_total_t, line_e_kin_t, line_e_pot_t, line_pt, line_vt, line_at
 
     if animated:
-        interval = int((t[1]-t[0])*1000/speed)
+        data_interval = int((t[1]-t[0])*1000/speed)
+        # data denser than animation rate
+        if data_interval < interval:
+            print("Data is denser than animation rate. Some frames will be skipped.")
+            if interval/data_interval % 1 != 0:
+                print("Data rate is not integer multiply of animation rate. Animation rate will decrease accordingly.")
+            frame_multiplier = ceil(interval/data_interval)
+            interval = int(data_interval*frame_multiplier)
+            frames = [i*frame_multiplier for i in range(ceil(len(t)/frame_multiplier))]
+        # data sparser than animation rate
+        elif data_interval > interval:
+            print("Data is sparser than animation rate. Animiation rate will be lower.")
+            interval = int(data_interval)
+            frames = len(t)
+        # data rate same as animation rate (everything fine)
+        else:
+            frames = len(t)
+    
         if eval_animation:
             print(f"expected interval [ms]: {interval}")
             print(f"expected total time [s]: {(t[-1]-t[0])/speed}")
-        return FuncAnimation(plt.gcf(), animate, init_func=init, frames=len(x), interval=interval, 
+        return FuncAnimation(plt.gcf(), animate, init_func=init, frames=frames, interval=interval, 
                              repeat=False, blit=True)
 
 def eval_frame_processing_time():
     if not anim_frame_time_list:
-        print("You need to set eval_animation=True for plot_sim_results")
+        print("No time data to evaluate.")
         return
 
     anim_frame_time_arr = np.array(anim_frame_time_list)
