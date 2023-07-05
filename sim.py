@@ -353,7 +353,12 @@ def plot_sim_results(t, p, path_xy, x, y, animated=True, speed=1.0):
 
 
 if __name__ == '__main__':
-    sim = Sim(Curve())
+    t = sym.Symbol('t', real=True)
+    x = 0.3*sym.cos(3*t)
+    y = sym.sin(t)
+    t_span = [-2.8, -np.pi+2.8]
+    curve = Curve(t, x, y, t_span)
+    sim = Sim(curve)
     t, p, path_xy, x, y = sim.simulate(t_max=10.0)
     plot_sim_results(t, p, path_xy, x, y, animated=False)
     plt.show()
