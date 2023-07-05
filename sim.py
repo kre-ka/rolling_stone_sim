@@ -312,35 +312,37 @@ def plot_sim_results(t, p, path_xy, x, y, animated=True, speed=1.0):
 
     plt.tight_layout()
 
+
+    def init():
+        point_yx.set_data([], [])
+        line_e_total_t.set_data([], [])
+        line_e_kin_t.set_data([], [])
+        line_e_pot_t.set_data([], [])
+        line_pt.set_data([], [])
+        line_vt.set_data([], [])
+        line_at.set_data([], [])
+        return point_yx, line_e_total_t, line_e_kin_t, line_e_pot_t, line_pt, line_vt, line_at
+
     def animate(i):
-        t_plt.append(t[i])
-        x_plt.append(x[i])
-        y_plt.append(y[i])
-        p_plt.append(p[i])
-        v_plt.append(v[i])
-        a_plt.append(a[i])
-        e_total_plt.append(e_total[i])
-        e_kin_plt.append(e_kin[i])
-        e_pot_plt.append(e_pot[i])
+        point_yx.set_data(x[i], y[i])
+        
+        i += 1
+        line_e_total_t.set_data(t[:i], e_total[:i])
+        line_e_kin_t.set_data(t[:i], e_kin[:i])
+        line_e_pot_t.set_data(t[:i], e_pot[:i])
 
-        point_yx.set_xdata(x[i])
-        point_yx.set_ydata(y[i])
-
-        line_e_total_t.set_xdata(t_plt)
-        line_e_total_t.set_ydata(e_total_plt)
-        line_e_kin_t.set_xdata(t_plt)
-        line_e_kin_t.set_ydata(e_kin_plt)
-        line_e_pot_t.set_xdata(t_plt)
-        line_e_pot_t.set_ydata(e_pot_plt)
+        line_pt.set_data(t[:i], p[:i])
+        line_vt.set_data(t[:i], v[:i])
+        line_at.set_data(t[:i], a[:i])
 
         line_pt.set_xdata(t_plt)
         line_pt.set_ydata(p_plt)
 
-        line_vt.set_xdata(t_plt)
-        line_vt.set_ydata(v_plt)
+        return point_yx, line_e_total_t, line_e_kin_t, line_e_pot_t, line_pt, line_vt, line_at
 
-        line_at.set_xdata(t_plt)
-        line_at.set_ydata(a_plt)
+    if animated:
+        return FuncAnimation(plt.gcf(), animate, init_func=init, frames=len(x), interval=int((t[1]-t[0])*1000/speed), 
+                             repeat=False, blit=True)
 
         fig.canvas.draw_idle()
         fig.canvas.flush_events()
