@@ -55,7 +55,12 @@ class CurveModeler:
         return sliders
 
     def model_curve(self):
-        fig, ax = plt.subplots()
+        # close previous instance of this figure, if it exists
+        # the name should be unique
+        figname = 'model_curve'
+        plt.close(figname)
+
+        fig, ax = plt.subplots(num=figname)
         fig.set_size_inches(6, 6)
         ax.set_aspect('equal', adjustable='datalim')
         fig.canvas.header_visible = False
@@ -214,6 +219,11 @@ anim_frame_time_list = []
 
 # may not work in real time if time resolution is too large
 def plot_sim_results(t, p, path_xy, x, y, animated=True, interval=20, speed=1.0, eval_animation=False):
+    # close previous instance of this figure, if it exists
+    # the name should be unique
+    figname = 'sim_results'
+    plt.close(figname)
+
     # make axis limits a little bigger than necessary
     def expand_limits(lim, amount):
         additional_range = (lim[1] - lim[0]) * amount
@@ -260,7 +270,7 @@ def plot_sim_results(t, p, path_xy, x, y, animated=True, interval=20, speed=1.0,
         e_kin_plt = e_kin
         e_pot_plt = e_pot
 
-    fig, axs = plt.subplots(2,3)
+    fig, axs = plt.subplots(2,3, num=figname)
     fig.set_size_inches(10,7)
     fig.canvas.header_visible = False
 
