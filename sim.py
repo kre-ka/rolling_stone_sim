@@ -226,6 +226,8 @@ def plot_sim_results(t, p, path_xy, x, y,
     figname = 'sim_results'
     plt.close(figname)
 
+    anim_frame_time_list.clear()
+
     # make axis limits a little bigger than necessary
     def expand_limits(lim, amount):
         additional_range = (lim[1] - lim[0]) * amount
@@ -408,9 +410,6 @@ def eval_frame_processing_time():
     total_time = anim_frame_time_arr[-1] - anim_frame_time_arr[0]
     print(f"average interval [ms]: {np.average(intervals)*1000}")
     print(f"total time [s]: {total_time}")
-
-def reset_frame_processing_time_counter():
-    anim_frame_time_list.clear()
 
 
 if __name__ == '__main__':
