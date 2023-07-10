@@ -159,17 +159,21 @@ class Sim:
 
         atol - absolute error tolerance, defualt: 1e-6
 
+        print_solver_output - self-explaining, I guess
+
+        ---
+
         returns:
 
         t - evaluation times array
 
-        (p, p', p'') - states array in path coordinates
+        p - (p, p', p'') - position, speed and acceleration arrays tuple in path coordinates, ordered by time
 
-        path_xy - path points
+        curve_xy - (x, y) - curve on which the body moves; tuple of arrays
 
-        x - x positions array
+        x - x position array, ordered by time
 
-        y - y positions array
+        y - y position array, ordered by time
         '''
         # evaluation times vector
         t = np.linspace(0, t_max, int(t_max*t_res))
@@ -192,8 +196,8 @@ class Sim:
         # concatenate a into p for array (p, p', p'')
         p = np.row_stack((p,a))
         x, y = self.evaluate_x_y(p[0])
-        path_xy = self.eval_path_points()
-        return t, p, path_xy, x, y
+        curve_xy = self.eval_path_points()
+        return t, p, curve_xy, x, y
 
     def evaluate_x_y(self, p_arr):
         t_arr = self._t_p_f(p_arr)
@@ -214,13 +218,39 @@ def calc_energy(p, y, g=9.81):
     total_energy = kinetic_energy + potential_energy
     return total_energy, kinetic_energy, potential_energy
 
+
 # this is to evaluate animation execution
 anim_frame_time_list = []
 
-# may not work in real time if time resolution is too large
-def plot_sim_results(t, p, path_xy, x, y, 
+def plot_sim_results(t: np.ndarray, p: np.ndarray, curve_xy: np.ndarray, x: np.ndarray, y: np.ndarray, 
                      optional_features=('e_total', 'e_kin', 'e_pot', 'p', 'v', 'a'), 
-                     animated=True, interval=20, speed=1.0, eval_animation=False):
+                     animated=True, interval=100, speed=1.0, eval_animation=False) -> None | FuncAnimation:
+    '''
+    t - time array
+
+    p - (p, p', p'') - position, speed and acceleration arrays tuple in path coordinates, ordered by time
+
+    curve_xy - (x, y) - curve on which the body moves; tuple of arrays
+
+    x - x position array, ordered by time
+
+    y - y position array, ordered by time
+
+    optional_features - additional features to plot; all supported features in default argument; tuple of strings
+
+    animated - True for animated plot (only for Jupyter notebooks), False for static
+
+    interval - amount of time between animation frames [ms]
+
+    speed - animation speed multiplier
+
+    eval_animation - whether to evaluate animation rendering time (to check if it isn't lagging behind simulation data)
+
+    ---
+
+    Returns matplotlib.animation.FuncAnimation for animated=True, none otherwise
+    '''
+
     # close previous instance of this figure, if it exists
     # the name should be unique
     figname = 'sim_results'
@@ -294,7 +324,7 @@ def plot_sim_results(t, p, path_xy, x, y,
     ax_yx.set_xlim(x_lim)
     ax_yx.set_ylim(y_lim)
     ax_yx.axis("scaled")
-    line_yx, = ax_yx.plot(path_xy[0], path_xy[1])
+    line_yx, = ax_yx.plot(curve_xy[0], curve_xy[1])
     if animated:
         point_yx, = ax_yx.plot(x_plt, y_plt, 'o')
 
