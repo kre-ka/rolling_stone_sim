@@ -272,8 +272,8 @@ def plot_sim_results(t, p, path_xy, x, y,
         e_kin_plt = e_kin
         e_pot_plt = e_pot
 
-    fig, axs = plt.subplots(2,3, num=figname)
-    fig.set_size_inches(10,7)
+    fig, (ax_yx, ax_pt, ax_et) = plt.subplots(1,3, num=figname)
+    fig.set_size_inches(14,4)
     fig.canvas.header_visible = False
 
     # make static plot limits
@@ -287,45 +287,53 @@ def plot_sim_results(t, p, path_xy, x, y,
 
     # y(x)
     x_lim, y_lim = equalize_axis_scales(x_lim, y_lim)
-    axs[0][0].set_xlabel('x')
-    axs[0][0].set_ylabel('y')
-    axs[0][0].set_xlim(x_lim)
-    axs[0][0].set_ylim(y_lim)
-    axs[0][0].axis("scaled")
-    line_yx, = axs[0][0].plot(path_xy[0], path_xy[1])
+    ax_yx.set_xlabel('x')
+    ax_yx.set_ylabel('y')
+    ax_yx.set_xlim(x_lim)
+    ax_yx.set_ylim(y_lim)
+    ax_yx.axis("scaled")
+    line_yx, = ax_yx.plot(path_xy[0], path_xy[1])
     if animated:
-        point_yx, = axs[0][0].plot(x_plt, y_plt, 'o')
-
-    # e(t)
-    axs[0][1].set_xlabel('t')
-    axs[0][1].set_ylabel('E')
-    axs[0][1].set_xlim(t_lim)
-    axs[0][1].set_ylim(e_lim)
-    line_e_total_t, = axs[0][1].plot(t_plt, e_total_plt)
-    line_e_kin_t, = axs[0][1].plot(t_plt, e_kin_plt)
-    line_e_pot_t, = axs[0][1].plot(t_plt, e_pot_plt)
-    axs[0][1].legend(['Total Energy', 'Kinetic Energy', 'Potential Energy'])
+        point_yx, = ax_yx.plot(x_plt, y_plt, 'o')
 
     # p(t)
-    axs[1][0].set_xlabel('t')
-    axs[1][0].set_ylabel('p')
-    axs[1][0].set_xlim(t_lim)
-    axs[1][0].set_ylim(p_lim)
-    line_pt, = axs[1][0].plot(t_plt, p_plt)
+    ax_pt.set_xlabel('t')
+    ax_pt.set_ylabel('p')
+    ax_pt.set_xlim(t_lim)
+    ax_pt.set_ylim(p_lim)
+    line_pt, = ax_pt.plot(t_plt, p_plt, color='b', label='p')
+    ax_pt.yaxis.label.set_color(line_pt.get_color())
 
     # v(t)
-    axs[1][1].set_xlabel('t')
-    axs[1][1].set_ylabel('v')
-    axs[1][1].set_xlim(t_lim)
-    axs[1][1].set_ylim(v_lim)
-    line_vt, = axs[1][1].plot(t_plt, v_plt)
+    ax_vt = ax_pt.twinx()
+    ax_vt.set_ylabel('v')
+    ax_vt.set_ylim(v_lim)
+    line_vt, = ax_vt.plot(t_plt, v_plt, color='orange', label='v')
+    ax_vt.spines['left'].set_position(('outward', 40))
+    ax_vt.spines['left'].set_visible(True)
+    ax_vt.yaxis.set_label_position('left')
+    ax_vt.yaxis.set_ticks_position('left')
+    ax_vt.yaxis.label.set_color(line_vt.get_color())
 
     # a(t)
-    axs[1][2].set_xlabel('t')
-    axs[1][2].set_ylabel('a')
-    axs[1][2].set_xlim(t_lim)
-    axs[1][2].set_ylim(a_lim)
-    line_at, = axs[1][2].plot(t_plt, a_plt)
+    ax_at = ax_pt.twinx()
+    ax_at.set_ylabel('a')
+    ax_at.set_ylim(a_lim)
+    line_at, = ax_at.plot(t_plt, a_plt, color='green', label='a')
+    ax_at.spines['right']
+    ax_at.yaxis.label.set_color(line_at.get_color())
+
+    ax_pt.legend(handles=[line_pt, line_vt, line_at])
+    
+    # e(t)
+    ax_et.set_xlabel('t')
+    ax_et.set_ylabel('E')
+    ax_et.set_xlim(t_lim)
+    ax_et.set_ylim(e_lim)
+    line_e_total_t, = ax_et.plot(t_plt, e_total_plt)
+    line_e_kin_t, = ax_et.plot(t_plt, e_kin_plt)
+    line_e_pot_t, = ax_et.plot(t_plt, e_pot_plt)
+    ax_et.legend(['Total Energy', 'Kinetic Energy', 'Potential Energy'])
 
     plt.tight_layout()
 
