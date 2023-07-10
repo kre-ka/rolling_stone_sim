@@ -351,6 +351,7 @@ def plot_sim_results(t, p, path_xy, x, y, animated=True, interval=20, speed=1.0,
         line_at.set_data(t[:i], a[:i])
 
         # there should be "if eval_animation:" here, but it's too slow
+        # TODO: or is it?
         anim_frame_time_list.append(time())
 
         return point_yx, line_e_total_t, line_e_kin_t, line_e_pot_t, line_pt, line_vt, line_at
