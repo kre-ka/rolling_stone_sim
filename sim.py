@@ -218,7 +218,9 @@ def calc_energy(p, y, g=9.81):
 anim_frame_time_list = []
 
 # may not work in real time if time resolution is too large
-def plot_sim_results(t, p, path_xy, x, y, animated=True, interval=20, speed=1.0, eval_animation=False):
+def plot_sim_results(t, p, path_xy, x, y, 
+                     optional_features=('e_total', 'e_kin', 'e_pot', 'p', 'v', 'a'), 
+                     animated=True, interval=20, speed=1.0, eval_animation=False):
     # close previous instance of this figure, if it exists
     # the name should be unique
     figname = 'sim_results'
@@ -327,34 +329,40 @@ def plot_sim_results(t, p, path_xy, x, y, animated=True, interval=20, speed=1.0,
 
     plt.tight_layout()
 
+    # what to plot for each feature key (plot, (data_x, data_y))
+    supported_features = {'e_total': (line_e_total_t, (t, e_total)),
+                          'e_kin': (line_e_kin_t, (t, e_kin)),
+                          'e_pot': (line_e_pot_t, (t, e_pot)),
+                          'p': (line_pt, (t, p)),
+                          'v': (line_vt, (t, v)),
+                          'a': (line_at, (t, a))}
+    
+    features_data = []
+    for feature in optional_features:
+        if feature in supported_features.keys():
+            features_data.append(supported_features[feature])
+    features_data = tuple(features_data)
 
     def init():
         point_yx.set_data([], [])
-        line_e_total_t.set_data([], [])
-        line_e_kin_t.set_data([], [])
-        line_e_pot_t.set_data([], [])
-        line_pt.set_data([], [])
-        line_vt.set_data([], [])
-        line_at.set_data([], [])
-        return point_yx, line_e_total_t, line_e_kin_t, line_e_pot_t, line_pt, line_vt, line_at
+
+        for plot, data in features_data:
+            plot.set_data([], [])
+        
+        return point_yx, *features_data
 
     def animate(i):
         point_yx.set_data(x[i], y[i])
         
         i += 1
-        line_e_total_t.set_data(t[:i], e_total[:i])
-        line_e_kin_t.set_data(t[:i], e_kin[:i])
-        line_e_pot_t.set_data(t[:i], e_pot[:i])
-
-        line_pt.set_data(t[:i], p[:i])
-        line_vt.set_data(t[:i], v[:i])
-        line_at.set_data(t[:i], a[:i])
+        for plot, data in features_data:
+            plot.set_data(data[0][:i], data[1][:i])
 
         # there should be "if eval_animation:" here, but it's too slow
         # TODO: or is it?
         anim_frame_time_list.append(time())
 
-        return point_yx, line_e_total_t, line_e_kin_t, line_e_pot_t, line_pt, line_vt, line_at
+        return point_yx, *features_data
 
     if animated:
         data_interval = int((t[1]-t[0])*1000/speed)
@@ -378,6 +386,7 @@ def plot_sim_results(t, p, path_xy, x, y, animated=True, interval=20, speed=1.0,
         if eval_animation:
             print(f"expected interval [ms]: {interval}")
             print(f"expected total time [s]: {(t[-1]-t[0])/speed}")
+        
         return FuncAnimation(plt.gcf(), animate, init_func=init, frames=frames, interval=interval, 
                              repeat=False, blit=True)
 
