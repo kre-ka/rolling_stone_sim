@@ -9,16 +9,7 @@ import ipywidgets as widgets
 from time import time
 from math import ceil
 
-
-class Curve:
-    def __init__(self, t: sym.Symbol, x: sym.Expr, y: sym.Expr, t_span: Tuple[float, float]) -> None:
-        self.t = t
-        self.x = x
-        self.y = y
-        self.t_span = t_span
-        
-        self.x_f = sym.lambdify(t, x)
-        self.y_f = sym.lambdify(t, y)
+from curves import Curve
 
 
 class CurveModeler:
