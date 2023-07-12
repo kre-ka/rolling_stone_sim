@@ -15,6 +15,18 @@ class Curve:
         self.x_f = sym.lambdify(t, x)
         self.y_f = sym.lambdify(t, y)
 
+class CubicBezierCurve(Curve):
+    def __init__(self, 
+                 P: np.ndarray) -> None:
+        '''
+        P - array of control point coordinates; np.ndarray of shape (4, 2)
+        '''
+        t = sym.Symbol('t', real=True)
+        x, y = (1-t)**3*P[0] + 3*t*(1-t)**2*P[1] + 3*t**2*(1-t)*P[2] + t**3*P[3]
+        t_span = (0, 1)
+        super().__init__(t, x, y, t_span)
+
+
 def plot_curve(curve: Curve, resolution: int=100):
     figname = 'curve'
     plt.close(figname)
@@ -29,6 +41,14 @@ def plot_curve(curve: Curve, resolution: int=100):
     ax.plot(x, y)
 
 
+def teardrop_bezier() -> Curve:
+    P = np.array([[-1,-1],
+                  [10,-5],
+                  [-10,-5],
+                  [1,-1]])
+    curve = CubicBezierCurve(P)
+    return curve
+
 def circle() -> Curve:
     t = sym.Symbol('t', real=True)
     x = sym.cos(t)
@@ -37,7 +57,7 @@ def circle() -> Curve:
     curve = Curve(t, x, y, t_span)
     return curve
 
-def tear() -> Curve:
+def teardrop() -> Curve:
     t = sym.Symbol('t', real=True)
     x = 0.3*sym.cos(3*t)
     y = 2*sym.sin(t)
@@ -55,6 +75,6 @@ def hill() -> Curve:
 
 
 if __name__ == '__main__':
-    curve = hill()
+    curve = teardrop_bezier()
     plot_curve(curve)
     plt.show()
