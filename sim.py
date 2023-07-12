@@ -9,7 +9,7 @@ import ipywidgets as widgets
 from time import time
 from math import ceil
 
-from curves import Curve
+from curve import Curve
 
 
 class CurveModeler:
