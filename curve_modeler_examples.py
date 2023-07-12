@@ -5,7 +5,7 @@ from math import pi
 from curve_modeler import *
 
 
-def cos_sin_modeler(slider_params_override: Dict[str, Dict[str, float]]) -> CurveModeler:
+def cos_sin_modeler(slider_params_override: None|Dict[str, Dict[str, float]]=None) -> CurveModeler:
     '''
     This is pretty general modeler, you can use slider_params_override parameter to make more specific cases of it (see circle_modeler())
     '''
@@ -20,11 +20,12 @@ def cos_sin_modeler(slider_params_override: Dict[str, Dict[str, float]]) -> Curv
                      't':  {'min':-pi, 'max':pi, 'step': pi*0.05, 'value': (-2.8, -pi+2.8)}}
     
     # this handles overriding slider parameters
-    for slider_key, slider_value in slider_params_override.items():
-        if slider_key in slider_params.keys():
-            for param_key, param_value in slider_value.items():
-                if param_key in slider_params[slider_key].keys():
-                    slider_params[slider_key][param_key] = param_value
+    if slider_params_override:
+        for slider_key, slider_value in slider_params_override.items():
+            if slider_key in slider_params.keys():
+                for param_key, param_value in slider_value.items():
+                    if param_key in slider_params[slider_key].keys():
+                        slider_params[slider_key][param_key] = param_value
     
     return CurveModeler(t, f_params, x, y, slider_params)
 
