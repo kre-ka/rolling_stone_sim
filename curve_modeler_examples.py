@@ -14,7 +14,7 @@ def cos_sin_modeler(slider_params_override: None|Dict[str, Dict[str, float]]=Non
     x = f_params['Ax']*sym.cos(f_params['wx']*t)
     y = f_params['Ay']*sym.sin(f_params['wy']*t)
     slider_params = {'Ax': {'min': -3, 'max': 3, 'step': 0.1, 'value': 0.3},
-                     'Ay': {'min': -3, 'max': 3, 'step': 0.1, 'value': 2},
+                     'Ay': {'min': 0.1, 'max': 3, 'step': 0.1, 'value': 2},
                      'wx': {'min': -5, 'max': 5, 'step': 0.1, 'value': 3},
                      'wy': {'min': -5, 'max': 5, 'step': 0.1, 'value': 1},
                      't':  {'min':-pi, 'max':pi, 'step': pi*0.05, 'value': (-2.8, -pi+2.8)}}
@@ -45,10 +45,16 @@ def circle_modeler() -> CurveModeler:
     # you only need to use the ones you want to change
     # use key 'constant' with constant value you wish to substitute parameter with (this will remove the slider for that parameter)
     slider_params_override = {'Ax': {'value': 1},
-                              'Ay': {'min': 0.1, 'value': 1},
+                              'Ay': {'value': 1},
                               'wx': {'constant': 1},
                               'wy': {'constant': 1},
                               't':  {'min':(0.5+0.05)*pi, 'max':(2.5-0.05)*pi, 'value': ((0.5+0.05)*pi, (2.5-0.05)*pi)}}
+    return cos_sin_modeler(slider_params_override)
+
+def teardrop_modeler() -> CurveModeler:
+    slider_params_override = {'wx': {'min': 1},
+                              'wy': {'constant': 1},
+                              't': {'min': -(1.5-0.05)*pi, 'max': (0.5-0.05)*pi}}
     return cos_sin_modeler(slider_params_override)
 
 
