@@ -91,8 +91,14 @@ class Sim:
         else:
             sol = solve_ivp(self._dyn_eq_f, (0, t_max), initial_conditions, method=method, args=(g,), t_eval=t, 
                         rtol=rtol, atol=atol)
+            
+        if not sol.success:
+            print(sol)
+            return None, None, None, None, None
+        
         if print_solver_output:
             print(sol)
+        
         t = sol.t
         # this gives p and p'
         p = sol.y
