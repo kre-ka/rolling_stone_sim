@@ -6,7 +6,7 @@ A fruit of my desire to learn some numeric simulations. Heavy use of [sympy](htt
 
 ## Requirements
 - Python (made with 3.11)
-- everything else - that's what [requirements.txt](requirements.txt) is for
+- everything else - see [requirements.txt](requirements.txt)
 
 ## What can I do with it?
 - simulate a particle mass in gravity field traversing numerous parametric curves (which means ***it can do loops***)
