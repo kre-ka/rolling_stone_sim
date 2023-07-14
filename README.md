@@ -4,6 +4,10 @@ A fruit of my desire to learn some numeric simulations. Heavy use of [sympy](htt
 
 ![sim_result_demo](media/sim_result_demo.gif)
 
+## Requirements
+- Python (made with 3.11)
+- everything else - that's what [requirements.txt](requirements.txt) is for
+
 ## What can I do with it?
 - simulate a particle mass in gravity field traversing numerous parametric curves (which means ***it can do loops***)
 - watch it move in *almost* real time (or slower/faster if you want to)
