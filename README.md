@@ -17,7 +17,7 @@ A fruit of my desire to learn some numeric simulations. Heavy use of [sympy](htt
 - define your own curve using [sympy](https://github.com/sympy/sympy) expressions
 - model a curve using interactive plot
 ## TODO
-- add multi-segment spline example(s)
+- add spline example(s) (there are only one-segment curves now)
 - Bézier curve and spline modeler
 - cover simulation runtime warnings
 - add damping
