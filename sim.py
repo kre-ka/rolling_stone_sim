@@ -11,11 +11,8 @@ from curve import Curve
            
 
 class Sim:
-    def __init__(self, curve: Curve) -> None:
+    def __init__(self, curve: Curve, arc_length_param_rtol=1e-3, arc_length_param_atol=1e-3) -> None:
         self._curve = curve
-
-        p_integrand = sym.sqrt(sym.diff(self._curve.x, self._curve.t)**2 + sym.diff(self._curve.y, self._curve.t)**2)
-        p_integrand_f = sym.lambdify(self._curve.t, p_integrand)
 
         # curve steepness
         k = (sym.diff(self._curve.y, self._curve.t) / sym.Abs(sym.diff(self._curve.x, self._curve.t))).simplify()
@@ -27,18 +24,79 @@ class Sim:
             (-k/(1+k**2)**0.5, True)).simplify()
         a_f = sym.lambdify(self._curve.t, a)
         
-        # use these tables to interpolate continuous a(p) and t(p) functions
-        # TODO: try to make these uniformly distributed in p, not t
-        t_span = self._curve.t_span
-        t = np.linspace(t_span[0], t_span[1], int((t_span[1]-t_span[0])*100+1))
-        # TODO: maybe doing it in steps wold be computationally better than starting from t0 every time, need to check
-        p_table = np.array([quad(p_integrand_f, t[0], u_lim)[0] for u_lim in t])
-        a_table = a_f(t)
+        t_table, p_table = self._make_p_t_lookup_table(arc_length_param_rtol, arc_length_param_atol)
+        a_table = a_f(t_table)
 
         # a(p)
         self._a_f = CubicSpline(p_table, a_table)
         # t(p)
-        self._t_p_f = CubicSpline(p_table, t)
+        self._t_p_f = CubicSpline(p_table, t_table)
+    
+    def _make_p_t_lookup_table(self, rtol, atol):
+        '''
+        Adaptive algorithm to solve arc length parametrization problem numerically in a divide-and-conquer fashion
+
+        ---
+
+        params:
+
+        rtol - relative error tolerance
+
+        atol - absolute error tolerance
+
+        ---
+
+        returns:
+
+        t_tab, p_tab - corresponding curve parameter and position (arc length) arrays
+        '''
+        # t_span points to check for error in
+        # this won't work for any other values
+        test_points = np.array([0.25, 0.5, 0.75])
+
+        # position along curve (arc lenght) function to integrate
+        p_integrand = sym.sqrt(sym.diff(self._curve.x, self._curve.t)**2 + sym.diff(self._curve.y, self._curve.t)**2)
+        p_integrand_f = sym.lambdify(self._curve.t, p_integrand)
+
+        # initial t and p tables
+        # boundaries and midpoint
+        # (midpoint is used for optimization)
+        t_tab = [self._curve.t_span[0], (self._curve.t_span[0]+self._curve.t_span[1])/2, self._curve.t_span[1]]
+        p_tab = [quad(p_integrand_f, self._curve.t_span[0], t)[0] for t in t_tab]
+
+        # recursive method to expand t and p tables until p error is within bounds for linearly interpolated test points
+        def _expand_tables(t_tab, p_tab):
+            # t values for test points
+            t_test = t_tab[0] + (t_tab[-1]-t_tab[0]) * test_points
+            # integrated p values for test points; ground truth for p error computation
+            # reuses p value computed in previous step (the only reason why there are 3 item input arrays instead of 2;
+            # you could do the same for t_test, but come on, it's a cheap operation)
+            p_test_integrated = np.array([quad(p_integrand_f, self._curve.t_span[0], t_test[0])[0],
+                                          p_tab[1],
+                                          quad(p_integrand_f, self._curve.t_span[0], t_test[2])[0]])
+            # p values linearly interpolated from boundaries given in p_tab
+            p_test_interpolated = p_tab[0] + (p_tab[-1]-p_tab[0]) * test_points
+
+            # absolute and relative errors between interpolated and integrated (ground truth) p
+            abs_errors = abs(p_test_interpolated - p_test_integrated)
+            rel_errors = abs_errors/p_test_integrated
+            # if any error is out of bounds, divide the region of interest in two and use the method on both halves
+            if any([err > atol for err in abs_errors] + [err > rtol for err in rel_errors]):
+                t_tab_lower, p_tab_lower = _expand_tables([t_tab[0], t_test[0], t_test[1]], [p_tab[0], p_test_integrated[0], p_test_integrated[1]])
+                t_tab_upper, p_tab_upper = _expand_tables([t_test[1], t_test[2], t_tab[-1]], [p_test_integrated[1], p_test_integrated[2], p_tab[-1]])
+                
+                # add new points to the tables (avoid doubled middle point)
+                t_tab = t_tab_lower + t_tab_upper[1:]
+                p_tab = p_tab_lower + p_tab_upper[1:]
+            # if test is passed, you don't need the extra mid point
+            else:
+                t_tab.pop(1)
+                p_tab.pop(1)
+            return t_tab, p_tab
+        
+        t_tab, p_tab = _expand_tables(t_tab, p_tab)
+        return np.array(t_tab), np.array(p_tab)
+
 
     def _dyn_eq_f(self, t, state, g):
             p, v = state
