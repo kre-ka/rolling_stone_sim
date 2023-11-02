@@ -27,7 +27,7 @@ class Sim:
         t_table, p_table, a_table = self._make_lookup_tables(arc_length_param_rtol, arc_length_param_atol)
 
         # a(p)
-        self._a_f = CubicSpline(p_table, a_table)
+        self._a_p_f = CubicSpline(p_table, a_table)
         # t(p)
         self._t_p_f = CubicSpline(p_table, t_table)
     
@@ -101,11 +101,11 @@ class Sim:
 
     def _dyn_eq_f(self, t, state, g):
             p, v = state
-            return [v, g*self._a_f(p)]
+            return [v, g*self._a_p_f(p)]
 
     def _dyn_eq_jac_f(self, t, state, g):
         p, v = state
-        return [[0, 1], [g*self._a_f.derivative()(p), 0]]
+        return [[0, 1], [g*self._a_p_f.derivative()(p), 0]]
 
     def simulate(self, g=9.81, t_max=30, t_res=100, method='RK45', rtol=1e-4, atol=1e-6, print_solver_output=False):
         '''
