@@ -1,7 +1,7 @@
 import sympy as sym
 import numpy as np
 from scipy.integrate import solve_ivp, quad
-from scipy.interpolate import CubicSpline
+from scipy.interpolate import CubicSpline, interp1d
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from time import time
@@ -29,7 +29,7 @@ class Sim:
         # a(p)
         self._a_p_f = CubicSpline(p_table, a_table)
         # t(p)
-        self._t_p_f = CubicSpline(p_table, t_table)
+        self._t_p_f = interp1d(p_table, t_table, bounds_error=False, fill_value='extrapolate', assume_sorted=True)
     
     def _make_lookup_tables(self, rtol, atol):
         '''
