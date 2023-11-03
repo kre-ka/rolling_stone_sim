@@ -27,8 +27,11 @@ class Sim:
         t_table, p_table, a_table = self._make_lookup_tables(arc_length_param_rtol, arc_length_param_atol)
 
         # a(p)
+        # this needs to be cubic for integration methods using jacobian
+        # (well, actually this only needs to be quadratic, but there is no QuadraticSpline with interface like CubicSpline)
         self._a_p_f = CubicSpline(p_table, a_table)
         # t(p)
+        # this is only used for visualisation, so doesn't need to be very precise
         self._t_p_f = interp1d(p_table, t_table, bounds_error=False, fill_value='extrapolate', assume_sorted=True)
     
     def _make_lookup_tables(self, rtol, atol):
@@ -57,13 +60,14 @@ class Sim:
         p_integrand = sym.sqrt(sym.diff(self._curve.x, self._curve.t)**2 + sym.diff(self._curve.y, self._curve.t)**2)
         p_integrand_f = sym.lambdify(self._curve.t, p_integrand)
 
-        # initial t and a tables
+        # initial t and a (acceleration) tables
         # boundaries and midpoint
         # (midpoint is used for optimization)
         t_tab = [self._curve.t_span[0], (self._curve.t_span[0]+self._curve.t_span[1])/2, self._curve.t_span[1]]
         a_tab = list(self._a_t_f(np.array(t_tab)))
 
-        # recursive method to expand t and a tables until a error is within bounds for linearly interpolated test points
+        # recursive method to expand t and a tables until acceleration error is within bounds for linearly interpolated test points
+        # this makes more points in places where acceleration changes - that is on tight arcs
         def _expand_tables(t_tab, a_tab):
             # t values for test points
             t_test = t_tab[0] + (t_tab[-1]-t_tab[0]) * test_points

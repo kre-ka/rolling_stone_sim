@@ -21,7 +21,7 @@ A fruit of my desire to learn some numeric simulations. Heavy use of [sympy](htt
 - Bézier curve and spline modeler
 - cover simulation runtime warnings
 - add damping
-- optimize $a(p)$ and $t(p)$ functions used for simulation
+- ~~optimize $a(p)$ and $t(p)$ functions used for simulation~~
 - evaluate simulation time
 - simulate movement on animation run (for infinite simulation)
 - allow path looping (like, path is a whole closed circle, and you can have this discontinuous jump from $p_n$ to $p_0$ (assuming initial velocity is non-zero))
