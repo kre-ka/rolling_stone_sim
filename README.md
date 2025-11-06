@@ -10,6 +10,14 @@ A fruit of my desire to learn some numeric simulations. Heavy use of [sympy](htt
 - Python (made with 3.11)
 - everything else - see [requirements.txt](requirements.txt)
 
+## Installation
+You can run this directory in VS Code [Dev Container](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers).
+
+Or install all requirements with pip:
+```bash
+pip install -r requirements.txt
+```
+
 ## What can I do with it?
 - simulate a particle mass in gravity field traversing numerous parametric curves (which means ***it can do loops***)
 - watch it move in *almost* real time (or slower/faster if you want to)
